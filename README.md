@@ -60,9 +60,9 @@ SPROUT_DB_PWD=<aptible password>
 
 3. If your new materialized view requires access to a new relation in the production sprout database, edit the schema import in [sprout_fdw_config.sql](schema/sprout/sprout_fdw_config.sql). 
 
-NOTE: If you can write the new materialized within the existing schema, skip this step and proceed to step 4. 
+NOTE: If you can write the new materialized view within the existing schema, skip this step and proceed to step 4. 
 
-4. Define the new materialized view (or edit an existing view) in the [curated schema](schema/curated).
+4. Define the new materialized view (or update an existing view) in the [curated schema](schema/curated).
 
 5. Grant `dcyf-replica-user` access to the materialized view by updating [`dcyf_grants.sql`](scripts/dcyf_grants.sql).
 
