@@ -62,7 +62,7 @@ SPROUT_DB_PWD=<aptible password>
 
 NOTE: If you can write the new materialized within the existing schema, skip this step and proceed to step 4. 
 
-4. Define the new materialized view (or edit an existing view) in the [curated schema](schema/).
+4. Define the new materialized view (or edit an existing view) in the [curated schema](schema/curated).
 
 5. Grant `dcyf-replica-user` access to the materialized view by updating [`dcyf_grants.sql`](scripts/dcyf_grants.sql).
 
