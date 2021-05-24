@@ -10,7 +10,7 @@
 chmod 400 dcyf-cssat-ssh-key.pem
 ```
 
-4. Have a technical resource person from CSSAT provide you with a username and password for the `sprout_replica` Postgres database. If you are looking to make to the curated schema, you will need to be logged in using the `postgres` user. 
+4. Have a technical resource person from CSSAT provide you with a username and password for the `sprout_replica` Postgres database. If you are looking to make changes to the curated schema, you will need to be logged in using the `postgres` user. 
 
 
 ## Accessing the database 
