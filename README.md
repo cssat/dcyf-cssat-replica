@@ -58,7 +58,7 @@ SPROUT_DB_USER=<aptible username>
 SPROUT_DB_PWD=<aptible password>
 ```
 
-3. If your new materialized view requires access to a new relation in the production sprout database, edit the schema import in [sprout_fdw_config.sql](scripts/sprout_fdw_config.sql). 
+3. If your new materialized view requires access to a new relation in the production sprout database, edit the schema import in [sprout_fdw_config.sql](schema/sprout/sprout_fdw_config.sql). 
 
 NOTE: If you can write the new materialized within the existing schema, skip this step and proceed to step 4. 
 
