@@ -1,6 +1,6 @@
 ## Prerequisites
 
-1. Have a technical resource person from CSSAT provide you with the private key for the bastion host for the dcyf-cssat collaboration VPC in AWS. Here, we assume that the file is named `dcyf-cssat-ssh-key.pem`.
+1. Have a technical resource person from CSSAT provide you with the private key for the bastion host for the dcyf-cssat collaboration VPC in AWS. Here, we assume that the file is named `dcyf-cssat-ssh-key.pem`. If you copy the key out of LastPass, there may be blank lines inserted between the "Begin" and "End" lines and the actual key--if so, you will need to delete them.
 
 2. Have a technical resource person from CSSAT white list your IP address on the VPC. 
 
