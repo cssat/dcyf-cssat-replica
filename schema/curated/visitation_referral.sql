@@ -17,9 +17,11 @@ WITH org AS (
 	SELECT "ServiceReferralId" AS id,
 		MIN(CASE WHEN "StageTypeId" = 7 THEN "date" END) AS dt_referral_received,
 		MIN(CASE WHEN "StageTypeId" = 8 THEN "date" END) AS dt_provider_decision,
+		MIN(CASE WHEN "StageTypeId" = 9 THEN "date" END) AS dt_first_visit_scheduling_confirmation,
 		MAX(CASE WHEN "StageTypeId" = 9 THEN "date" END) AS dt_final_visit_scheduling_confirmation,
 		MIN(CASE WHEN "StageTypeId" = 10 THEN "date" END) AS dt_first_visit_scheduled,
 		MIN(CASE WHEN "StageTypeId" = 11 THEN "date" END) AS dt_referral_provider_resolved,
+		MAX(CASE WHEN "StageTypeId" = 12 THEN 1 END) AS rejected,
 		SUM(CASE WHEN "StageTypeId" = 10 THEN 1 END) AS schedule_attempt_count
 	FROM staging."ServiceReferralTimelineStages"
 	GROUP BY  "ServiceReferralId"
@@ -53,29 +55,41 @@ SELECT sr.id AS id_visitation_referral,
 	NULL AS intake_time, -- not sure what this is
 	schedule_attempt_count, -- not sure if logic is correct
 	dt_final_visit_scheduling_confirmation, -- not sure if logic is correct
+	dt_first_visit_scheduling_confirmation, -- not sure if logic is correct
 	dt_first_visit_scheduled,
 	NULL AS dt_first_visit_occurred,
 	dt_referral_provider_resolved,
-	NULL AS dt_referral_closed
-	/*
-	Parent_Count,
-	Child_Count,
-	CD_Provider_Decision,
-	Provider_Decision,
-	FL_Accepted,
-	FL_Transport_Required,
-	FL_Safety_Issue_Anger_Outburst,
-	FL_Safety_Issue_Inappropriate_Conversation,
-	FL_Safety_Issue_No_Contact_Order,
-	FL_Safety_Issue_DV,
-	CD_Supervision_Level,
-	Supervision_Level,
-	Visit_Frequency,
-	Visit_Duration_Hours,
-	CD_Visitation_Referral_Type,
-	Visitation_Referral_Type,
-	cd_transportation_type,
-	transportation_type */
+	NULL AS dt_referral_closed,
+	NULL AS Parent_Count,
+	NULL AS Child_Count,
+	NULL AS CD_Provider_Decision,
+	CASE WHEN rejected IS NULL THEN 'Accepted'
+		ELSE 'Rejected' 
+		END AS provider_decision,
+	CASE WHEN rejected IS NULL THEN 1 
+		ELSE 0 
+		END AS fl_accepted,
+	CASE WHEN "visitTransportationType" IN ('Transportation Only', 'With Transportation') THEN 1
+		ELSE 0
+		END AS FL_Transport_Required,
+	NULL AS FL_Safety_Issue_Anger_Outburst,
+	NULL AS FL_Safety_Issue_Inappropriate_Conversation,
+	NULL AS FL_Safety_Issue_No_Contact_Order,
+	NULL AS FL_Safety_Issue_DV,
+	CASE WHEN "levelOfSupervision" = 'Unsupervised' THEN 1
+		WHEN "levelOfSupervision" = 'Monitored' THEN 2
+		WHEN "levelOfSupervision" = 'Unsupervised' THEN 3
+		END AS CD_Supervision_Level,
+	"levelOfSupervision" AS supervision_level,
+	"visitFrequency" AS Visit_Frequency, --do we need to consider visit frequency unit 
+	"hoursPerVisit" AS visit_duration_hours,
+	NULL AS CD_Visitation_Referral_Type,
+	"serviceType" AS visitation_referral_type,
+	CASE WHEN "visitTransportationType" = 'With Transportation' THEN 1
+		WHEN "visitTransportationType" = 'Without Transportation' THEN 2
+		WHEN "visitTransportationType" = 'Transportation Only' THEN 3
+		END AS cd_transportation_type,
+	"visitTransportationType" AS transportation_type
 FROM staging."ServiceReferrals" AS sr
 JOIN staging."Organizations" AS ro
 	ON sr."routingOrganizationId" = ro.id
