@@ -30,7 +30,7 @@ WITH org AS (
 -- ), 
 srts AS (
 	SELECT "ServiceReferralId" AS id,
-		MIN(CASE WHEN "StageTypeId" = 7 THEN "createdAt" END) AS dt_referral_received,
+		MAX(CASE WHEN "StageTypeId" = 7 THEN "createdAt" END) AS dt_referral_received,
 		MAX(CASE WHEN "StageTypeId" = 8 THEN "timestamp" 
 			WHEN "StageTypeId" = 12 THEN "timestamp" 
 			END) AS dt_provider_decision, 
@@ -56,6 +56,22 @@ srts AS (
 		AND "isCurrentVersion"
 		AND "formVersion" = 'Ingested'
 	GROUP BY id
+), vc_dat AS (
+	SELECT "ServiceReferralId" AS id,
+		"UserId" AS id_visit_coodinator,
+		CONCAT("lastName", ', ', "firstName") AS visit_coodinator_name
+	FROM(SELECT "ServiceReferralId",
+	 		"UserId",
+			"createdAt",
+			MAX("createdAt") OVER (PARTITION BY "ServiceReferralId") AS dt_referral_received
+		FROM staging."ServiceReferralTimelineStages"
+		WHERE "StageTypeId" = 7 
+		GROUP BY "UserId", 
+			"ServiceReferralId",
+			"createdAt") as dat
+	JOIN staging."Users" AS u
+		ON dat."UserId" = u.id
+	WHERE dat."createdAt" = dt_referral_received
 )
 SELECT sr.id AS id_visitation_referral, 
 	"visitPlanId" AS id_visit_plan,
@@ -68,10 +84,10 @@ SELECT sr.id AS id_visitation_referral,
 	"dshsOffice" AS office,
 	"socialWorkerId" AS id_worker,
 	CONCAT("socialWorkerLastName", ', ', "socialWorkerFirstName") AS worker_name,
-	NULL id_visit_coodinator, -- look in timeline stages for user id transition from visit coordinator to provider
+	id_visit_coodinator, 
 	"routingOrganizationId" AS id_routing_organization,
 	ro.name AS routing_organization_name, 
-	NULL AS visit_coodinator_name, -- look in timeline stages for user id transition from visit coordinator to provider
+	visit_coodinator_name,
 	"organizationId" AS id_provider_sprout,
 	po.name AS provider_name_sprout,
 	regexp_replace(po."famlinkId", '\D', '', 'g') AS id_pvdr_org,
@@ -96,10 +112,15 @@ SELECT sr.id AS id_visitation_referral,
 	dt_first_visit_scheduled,
 	NULL AS dt_first_visit_occurred, -- first attended visit "reportType" = parent or sibling do they care about sibling visits?
 	dt_referral_provider_resolved,
-	NULL AS dt_referral_closed, -- min date between dt_referral_provider_resolved and dt_end
+	CASE WHEN dt_referral_provider_resolved < "endDate" THEN dt_referral_provider_resolved
+		WHEN dt_referral_provider_resolved > "endDate" THEN "endDate"
+		ELSE COALESCE(dt_referral_provider_resolved, "endDate") 
+		END AS dt_referral_closed,
 	parent_count,
 	child_count,
-	NULL AS CD_Provider_Decision, -- get from provider decision
+	CASE WHEN rejected IS NULL THEN 1
+		ELSE 2 
+		END AS CD_Provider_Decision, 
 	CASE WHEN rejected IS NULL THEN 'Accepted'
 		ELSE 'Rejected' 
 		END AS provider_decision,
@@ -109,12 +130,10 @@ SELECT sr.id AS id_visitation_referral,
 	CASE WHEN "visitTransportationType" IN ('Transportation Only', 'With Transportation') THEN 1
 		ELSE 0
 		END AS FL_Transport_Required,
-	/* THIS HAS CHANGED HOW ITS BEEN COLLECTED OVER TIME */
 	fl_safety_issue_anger_outburst, 
 	fl_safety_issue_inappropriate_conversation, 
 	fl_safety_issue_no_contact_order, 
 	fl_safety_issue_dv,
-	/* THIS HAS CHANGED HOW ITS BEEN COLLECTED OVER TIME */
 	CASE WHEN "levelOfSupervision" = 'Unsupervised' THEN 1
 		WHEN "levelOfSupervision" = 'Monitored' THEN 2
 		WHEN "levelOfSupervision" = 'Unsupervised' THEN 3
@@ -138,6 +157,8 @@ LEFT JOIN srts
 	ON sr.id = srts.id
 LEFT JOIN fl_data AS fd
 	ON sr.id = fd.id
+LEFT JOIN vc_dat AS vd
+	ON sr.id = vd.id
 WHERE sr."deletedAt" IS NULL
 	AND sr."isCurrentVersion"
 	AND "formVersion" = 'Ingested'
