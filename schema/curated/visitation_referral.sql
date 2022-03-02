@@ -13,25 +13,27 @@ WITH org AS (
 	SELECT DISTINCT id
 	FROM staging."ServiceReferrals" sr
 	WHERE id NOT IN (SELECT DISTINCT id FROM sr)
-), dtpr AS (
+), --dtpr AS (
 	/* 
 	use the id and org id (visit coord) to get dt_provider_received from this date 
 	when did it go to vc id to a provider id REMEMBER org id may not be provider
 	NEED first row provider with a provider and previous row was a VC (maybe routing org)
 	-- WHICH PROVIDER DO THEY WANT? might not be able to get the data
 	*/
-	SELECT "organizationId",
-		id,
-		MIN("createdAt") AS dt_provider_received
-	FROM staging."ServiceReferrals"
-	WHERE id = 58275
-	GROUP BY "organizationId",
-		id
-HAVING MAX(CASE WHEN "deletedAt" IS NOT NULL THEN 1 ELSE 0 END) = 0
-), srts AS (
+-- 	SELECT "organizationId",
+-- 		id,
+-- 		MIN("createdAt") AS dt_provider_received
+-- 	FROM staging."ServiceReferrals"
+-- 	GROUP BY "organizationId",
+-- 		id
+-- HAVING MAX(CASE WHEN "deletedAt" IS NOT NULL THEN 1 ELSE 0 END) = 0
+-- ), 
+srts AS (
 	SELECT "ServiceReferralId" AS id,
 		MIN(CASE WHEN "StageTypeId" = 7 THEN "createdAt" END) AS dt_referral_received,
-		MIN(CASE WHEN "StageTypeId" = 8 THEN "timestamp" END) AS dt_provider_decision, -- with stage 12 reject/accept max timestamp for 8 or 12
+		MAX(CASE WHEN "StageTypeId" = 8 THEN "timestamp" 
+			WHEN "StageTypeId" = 12 THEN "timestamp" 
+			END) AS dt_provider_decision, 
 		MIN(CASE WHEN "StageTypeId" = 9 THEN "date" END) AS dt_first_visit_scheduling_confirmation,
 		MAX(CASE WHEN "StageTypeId" = 9 THEN "date" END) AS dt_final_visit_scheduling_confirmation,
 		MIN(CASE WHEN "StageTypeId" = 10 THEN "date" END) AS dt_first_visit_scheduled,
@@ -40,6 +42,20 @@ HAVING MAX(CASE WHEN "deletedAt" IS NOT NULL THEN 1 ELSE 0 END) = 0
 		SUM(CASE WHEN "StageTypeId" = 10 THEN 1 END) AS schedule_attempt_count
 	FROM staging."ServiceReferralTimelineStages"
 	GROUP BY  "ServiceReferralId"
+), fl_data AS (
+	SELECT id, 
+		MAX(CASE WHEN safety_issues->>'angerOutbursts' = 'true' THEN 1 END) AS fl_safety_issue_anger_outburst,
+		MAX(CASE WHEN safety_issues->>'inappropriateConversation' = 'true' THEN 1 END) AS fl_safety_issue_inappropriate_conversation,
+		MAX(CASE WHEN safety_issues->>'restrainingOrder' = 'true' THEN 1 END) AS fl_safety_issue_no_contact_order, 
+		MAX(CASE WHEN safety_issues->>'domesticViolence' = 'true' THEN 1 END) AS fl_safety_issue_dv,
+		MAX(json_array_length("childDetails")) AS child_count,
+		MAX(json_array_length("parentGuardianDetails")) AS parent_count
+	FROM staging."ServiceReferrals", 
+		json_array_elements("safetyIssues") safety_issues
+	WHERE "deletedAt" IS NULL
+		AND "isCurrentVersion"
+		AND "formVersion" = 'Ingested'
+	GROUP BY id
 )
 SELECT sr.id AS id_visitation_referral, 
 	"visitPlanId" AS id_visit_plan,
@@ -59,24 +75,30 @@ SELECT sr.id AS id_visitation_referral,
 	"organizationId" AS id_provider_sprout,
 	po.name AS provider_name_sprout,
 	regexp_replace(po."famlinkId", '\D', '', 'g') AS id_pvdr_org,
-	NULL AS cd_referral_reason, -- case statement off of "referralReason"
+	CASE WHEN "referralReason" = 'Initial' THEN 1
+		WHEN "referralReason" LIKE '%Re-referral - Parent%' THEN 2
+		WHEN "referralReason" = 'Re-referral - Provider dropped' THEN 3
+		WHEN "referralReason" = 'Update - Changes to visit location, frequency, duration or level of supervision' THEN 4
+		WHEN "referralReason" = 'Reauthorization - All supervised visits every 6 months' THEN 5
+		WHEN "referralReason" LIKE '%Emergent 72%' THEN 6
+		END AS cd_referral_reason, -- still some other items not represented
 	"referralReason" AS referral_reason,
-	dt_referral_received, -- check
-	"startDate" AS dt_start, -- check
-	"endDate" AS dt_end, -- check
-	NULL AS dt_provider_received, -- need to get first record of provider with sr.id 
+	dt_referral_received,
+	"startDate" AS dt_start,
+	"endDate" AS dt_end,
+	NULL AS dt_provider_received, -- not sure we can provide this in any accurate way
 	dt_provider_decision,
 	"intakeDateCompleted" AS dt_intake, 
 	"intakeTotalTime" AS intake_time, 
-	schedule_attempt_count, -- not sure if logic is correct
+	schedule_attempt_count, 
 	dt_final_visit_scheduling_confirmation,
 	dt_first_visit_scheduling_confirmation, 
 	dt_first_visit_scheduled,
 	NULL AS dt_first_visit_occurred, -- first attended visit "reportType" = parent or sibling do they care about sibling visits?
 	dt_referral_provider_resolved,
 	NULL AS dt_referral_closed, -- min date between dt_referral_provider_resolved and dt_end
-	NULL AS Parent_Count, -- parentGaurdian? not sure
-	NULL AS Child_Count, -- childDetials?
+	parent_count,
+	child_count,
 	NULL AS CD_Provider_Decision, -- get from provider decision
 	CASE WHEN rejected IS NULL THEN 'Accepted'
 		ELSE 'Rejected' 
@@ -87,16 +109,18 @@ SELECT sr.id AS id_visitation_referral,
 	CASE WHEN "visitTransportationType" IN ('Transportation Only', 'With Transportation') THEN 1
 		ELSE 0
 		END AS FL_Transport_Required,
-	NULL AS FL_Safety_Issue_Anger_Outburst, -- safetyIssues
-	NULL AS FL_Safety_Issue_Inappropriate_Conversation, -- safetyIssues
-	NULL AS FL_Safety_Issue_No_Contact_Order, -- safetyIssues
-	NULL AS FL_Safety_Issue_DV, -- safetyIssues
+	/* THIS HAS CHANGED HOW ITS BEEN COLLECTED OVER TIME */
+	fl_safety_issue_anger_outburst, 
+	fl_safety_issue_inappropriate_conversation, 
+	fl_safety_issue_no_contact_order, 
+	fl_safety_issue_dv,
+	/* THIS HAS CHANGED HOW ITS BEEN COLLECTED OVER TIME */
 	CASE WHEN "levelOfSupervision" = 'Unsupervised' THEN 1
 		WHEN "levelOfSupervision" = 'Monitored' THEN 2
 		WHEN "levelOfSupervision" = 'Unsupervised' THEN 3
 		END AS CD_Supervision_Level,
 	"levelOfSupervision" AS supervision_level,
-	"visitFrequency" AS Visit_Frequency, --do we need to consider visit frequency unit 
+	"visitFrequency" AS Visit_Frequency, 
 	"hoursPerVisit" AS visit_duration_hours,
 	NULL AS CD_Visitation_Referral_Type,
 	"serviceType" AS visitation_referral_type,
@@ -112,6 +136,9 @@ JOIN staging."Organizations" AS po
  	ON sr."organizationId" = po.id
 LEFT JOIN srts
 	ON sr.id = srts.id
+LEFT JOIN fl_data AS fd
+	ON sr.id = fd.id
 WHERE sr."deletedAt" IS NULL
 	AND sr."isCurrentVersion"
+	AND "formVersion" = 'Ingested'
 	AND sr.id NOT IN (SELECT id FROM sr_non_dcyf)
