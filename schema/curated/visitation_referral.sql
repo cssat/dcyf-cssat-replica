@@ -48,10 +48,12 @@ srts AS (
 		MAX(CASE WHEN safety_issues->>'inappropriateConversation' = 'true' THEN 1 END) AS fl_safety_issue_inappropriate_conversation,
 		MAX(CASE WHEN safety_issues->>'restrainingOrder' = 'true' THEN 1 END) AS fl_safety_issue_no_contact_order, 
 		MAX(CASE WHEN safety_issues->>'domesticViolence' = 'true' THEN 1 END) AS fl_safety_issue_dv,
-		MAX(json_array_length("childDetails")) AS child_count,
-		MAX(json_array_length("parentGuardianDetails")) AS parent_count
+		COUNT(DISTINCT child_details->>'childFamlinkPersonID') AS child_count,
+		COUNT(DISTINCT parent_guardian_details->>'parentGuardianId') AS parent_count
 	FROM staging."ServiceReferrals", 
-		json_array_elements("safetyIssues") safety_issues
+		json_array_elements("safetyIssues") safety_issues,
+		json_array_elements("childDetails") child_details,
+ 		json_array_elements("parentGuardianDetails") parent_guardian_details
 	WHERE "deletedAt" IS NULL
 		AND "isCurrentVersion"
 		AND "formVersion" = 'Ingested'
@@ -97,7 +99,7 @@ SELECT sr.id AS id_visitation_referral,
 		WHEN "referralReason" = 'Update - Changes to visit location, frequency, duration or level of supervision' THEN 4
 		WHEN "referralReason" = 'Reauthorization - All supervised visits every 6 months' THEN 5
 		WHEN "referralReason" LIKE '%Emergent 72%' THEN 6
-		END AS cd_referral_reason, -- still some other items not represented
+		END AS cd_referral_reason,
 	"referralReason" AS referral_reason,
 	dt_referral_received,
 	"startDate" AS dt_start,
@@ -120,7 +122,7 @@ SELECT sr.id AS id_visitation_referral,
 	child_count,
 	CASE WHEN rejected IS NULL THEN 1
 		ELSE 2 
-		END AS CD_Provider_Decision, 
+		END AS cd_provider_decision, 
 	CASE WHEN rejected IS NULL THEN 'Accepted'
 		ELSE 'Rejected' 
 		END AS provider_decision,
@@ -129,7 +131,7 @@ SELECT sr.id AS id_visitation_referral,
 		END AS fl_accepted,
 	CASE WHEN "visitTransportationType" IN ('Transportation Only', 'With Transportation') THEN 1
 		ELSE 0
-		END AS FL_Transport_Required,
+		END AS fl_transport_required,
 	fl_safety_issue_anger_outburst, 
 	fl_safety_issue_inappropriate_conversation, 
 	fl_safety_issue_no_contact_order, 
@@ -137,11 +139,13 @@ SELECT sr.id AS id_visitation_referral,
 	CASE WHEN "levelOfSupervision" = 'Unsupervised' THEN 1
 		WHEN "levelOfSupervision" = 'Monitored' THEN 2
 		WHEN "levelOfSupervision" = 'Unsupervised' THEN 3
-		END AS CD_Supervision_Level,
+		END AS cd_supervision_level,
 	"levelOfSupervision" AS supervision_level,
-	"visitFrequency" AS Visit_Frequency, 
+	"visitFrequency" AS visit_frequency, 
 	"hoursPerVisit" AS visit_duration_hours,
-	NULL AS CD_Visitation_Referral_Type,
+	CASE WHEN "serviceType" = 'Parent / Child' THEN 1
+		WHEN "serviceType" = 'Sibling' THEN 2
+		END AS cd_visitation_referral_type,
 	"serviceType" AS visitation_referral_type,
 	CASE WHEN "visitTransportationType" = 'With Transportation' THEN 1
 		WHEN "visitTransportationType" = 'Without Transportation' THEN 2
