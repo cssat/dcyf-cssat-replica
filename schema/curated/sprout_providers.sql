@@ -1,3 +1,11 @@
+WITH cs AS (
+	SELECT "organizationId", 
+		string_agg("name", ', ') AS counties_serviced
+	FROM staging."OrganizationCounties" AS oc
+	JOIN staging."Counties" AS c
+		ON oc."countyId" = c.id
+	GROUP BY "organizationId"
+)
 SELECT o.id AS sprout_provider_id,
 	name AS provider_name,
 	"contactName" AS provider_contact_name,
@@ -29,10 +37,12 @@ SELECT o.id AS sprout_provider_id,
 	"hasSocialWorkers" AS FL_Has_Social_Workers,
 	o."createdAt" AS dt_create,
 	o."updatedAt" AS dt_update,
-	o."deletedAt" AS dt_deleted
-	-- Counties_Serviced
+	o."deletedAt" AS dt_deleted,
+	counties_serviced
 FROM staging."Organizations" AS o
 JOIN staging."OrganizationContracts" AS oc 
     ON o.id = oc."contractedOrganizationId"
 	AND oc."contractOwnerId" = 21
+JOIN cs 
+	ON o.id = cs."organizationId"
 ORDER BY o.id
