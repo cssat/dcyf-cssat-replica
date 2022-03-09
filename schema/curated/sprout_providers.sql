@@ -15,7 +15,7 @@ SELECT o.id AS sprout_provider_id,
 	city AS billing_address_city,
 	"state" AS billing_address_state,
 	"postalCode" AS billing_address_postal_code,
-	CASE WHEN regexp_replace(split_part("famlinkId", '/', 1), '\D', '', 'g')~'^([0-9]+)' THEN regexp_replace(split_part("famlinkId", '/', 1), '\D', '', 'g') 
+	CASE WHEN regexp_replace(split_part("famlinkId", '/', 1), '\D', '', 'g')~'^([0-9]+)' THEN regexp_replace(split_part("famlinkId", '/', 1), '\D', '', 'g')::INT
 		END AS famLink_provider_id, 
 	"visitationOnSaturday" AS FL_Visitation_On_Saturday,
 	"visitationOnSunday" AS FL_Visitation_On_Sunday,
