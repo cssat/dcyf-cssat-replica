@@ -13,21 +13,24 @@ WITH org AS (
 	SELECT DISTINCT id
 	FROM staging."ServiceReferrals" sr
 	WHERE id NOT IN (SELECT DISTINCT id FROM sr)
-), --dtpr AS (
-	/* 
-	use the id and org id (visit coord) to get dt_provider_received from this date 
-	when did it go to vc id to a provider id REMEMBER org id may not be provider
-	NEED first row provider with a provider and previous row was a VC (maybe routing org)
-	-- WHICH PROVIDER DO THEY WANT? might not be able to get the data
-	*/
--- 	SELECT "organizationId",
--- 		id,
--- 		MIN("createdAt") AS dt_provider_received
--- 	FROM staging."ServiceReferrals"
--- 	GROUP BY "organizationId",
--- 		id
--- HAVING MAX(CASE WHEN "deletedAt" IS NOT NULL THEN 1 ELSE 0 END) = 0
--- ), 
+), dtpr AS (
+	WITH routing_orgs as (
+		SELECT id 
+		FROM staging."Organizations" 
+		WHERE "deletedAt" IS NULL 
+			AND "routingOrg"
+	) 
+	SELECT DISTINCT id, 
+		"organizationId" AS routed_to, 
+		time 
+	FROM staging."ServiceReferrals" AS foo, 
+	LATERAL (SELECT MAX("updatedAt") AS time 
+		 	FROM staging."ServiceReferrals" AS bar 
+		 	WHERE bar.id = foo.id 
+		 		AND bar."versionId" < foo."versionId" 
+		 		AND bar."organizationId" != foo."organizationId" 
+		 		AND bar."organizationId" IN (SELECT id FROM routing_orgs) GROUP BY id) AS baz 
+	WHERE "formVersion" = 'Ingested';
 srts AS (
 	SELECT "ServiceReferralId" AS id,
 		MAX(CASE WHEN "StageTypeId" = 7 THEN "createdAt" END) AS dt_referral_received,
@@ -74,6 +77,14 @@ srts AS (
 	JOIN staging."Users" AS u
 		ON dat."UserId" = u.id
 	WHERE dat."createdAt" = dt_referral_received
+), first_visit AS (
+	SELECT "serviceReferralId",
+		MIN(date + time) AS dt_first_visit_occurred
+	FROM staging."VisitReports"
+	WHERE "deletedAt" IS NULL
+		AND "isCurrentVersion"
+		AND "cancellationType" IS NULL
+	GROUP BY "serviceReferralId"
 )
 SELECT sr.id AS id_visitation_referral, 
 	"visitPlanId" AS id_visit_plan,
