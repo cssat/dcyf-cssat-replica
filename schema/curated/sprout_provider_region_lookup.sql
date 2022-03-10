@@ -8,14 +8,13 @@ WITH org_region AS (
 )
 SELECT o.id AS sprout_provider_id,
 	COALESCE(org_reg."regionId", o."regionId") AS cd_region,
-	CONCAT('Region ', COALESCE(org_reg."regionId", o."regionId")) AS region,
-	NULL AS cd_office,
-	NULL AS office
+	CONCAT('Region ', COALESCE(org_reg."regionId", o."regionId")) AS region
 FROM staging."Organizations" AS o
 JOIN staging."OrganizationContracts" AS oc 
     ON o.id = oc."contractedOrganizationId"
 	AND oc."contractOwnerId" = 21
 LEFT JOIN org_region AS org_reg 
 	ON o.id = org_reg."organizationId"
+WHERE org_reg."regionId" != 7
 ORDER BY o.id,
 	cd_region
