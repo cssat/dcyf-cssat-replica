@@ -15,10 +15,14 @@ SELECT o.id AS sprout_provider_id,
 	city AS billing_address_city,
 	"state" AS billing_address_state,
 	"postalCode" AS billing_address_postal_code,
-	CASE WHEN regexp_replace(split_part("famlinkId", '/', 1), '\D', '', 'g')~'^([0-9]+)' THEN regexp_replace(split_part("famlinkId", '/', 1), '\D', '', 'g')::INT
+	CASE WHEN regexp_replace(split_part("famlinkId", '/', 1), '\D', '', 'g')~'^([0-9]+)' THEN regexp_replace(split_part("famlinkId", '/', 1), '\D', '', 'g')::INT 
 		END AS famLink_provider_id, 
-	"visitationOnSaturday" AS FL_Visitation_On_Saturday,
-	"visitationOnSunday" AS FL_Visitation_On_Sunday,
+	CASE WHEN "visitationOnSaturday" = 'true' THEN 1
+		WHEN "visitationOnSaturday" = 'false' THEN 0
+		END AS fl_visitation_on_saturday,
+	CASE WHEN "visitationOnSunday" = 'true' THEN 1
+		WHEN "visitationOnSunday" = 'false' THEN 0
+		END AS fl_visitation_on_sunday,
 	"bilingualSupportTypeId" AS bilingual_support_type_id,
 	CASE WHEN "bilingualSupportTypeId" = 1 THEN 'No language support offered'
 		WHEN "bilingualSupportTypeId" = 1 THEN 'No, use interpreter'
@@ -32,10 +36,16 @@ SELECT o.id AS sprout_provider_id,
 		WHEN "holidayAvailabilityTypeId" = 4 THEN CONCAT('Closed only on these holidays: ', "holidaysClosed")
 		END AS holiday_availibility_type, 
 	"holidaysClosed" AS holiday_closed,
-	searchable AS fl_searchable,
-	"stateServiced" AS State_Serviced,
-	"routingOrg" AS FL_Routing_Organization,
-	"hasSocialWorkers" AS FL_Has_Social_Workers,
+	CASE WHEN searchable = 'true' THEN 1
+		WHEN searchable = 'false' THEN 0
+		END AS fl_searchable,
+	"stateServiced" AS state_serviced,
+	CASE WHEN "routingOrg" = 'true' THEN 1
+		WHEN "routingOrg" = 'false' THEN 0
+		END AS fl_routing_organization,
+	CASE WHEN "hasSocialWorkers" = 'true' THEN 1
+		WHEN "hasSocialWorkers" = 'false' THEN 0
+		END AS fl_has_social_workers,
 	o."createdAt" AS dt_create,
 	o."updatedAt" AS dt_update,
 	o."deletedAt" AS dt_deleted,
