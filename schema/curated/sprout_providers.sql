@@ -16,7 +16,9 @@ SELECT o.id AS sprout_provider_id,
 	"state" AS billing_address_state,
 	"postalCode" AS billing_address_postal_code,
 	CASE WHEN regexp_replace(split_part("famlinkId", '/', 1), '\D', '', 'g')~'^([0-9]+)' THEN regexp_replace(split_part("famlinkId", '/', 1), '\D', '', 'g')::INT 
-		END AS famLink_provider_id, 
+		END AS dcyf_famLink_provider_id,
+	CASE WHEN regexp_replace(split_part("famlinkId", '/', 2), '\D', '', 'g')~'^([0-9]+)' THEN regexp_replace(split_part("famlinkId", '/', 2), '\D', '', 'g')::INT 
+		END AS fin_famLink_provider_id,
 	CASE WHEN "visitationOnSaturday" = 'true' THEN 1
 		WHEN "visitationOnSaturday" = 'false' THEN 0
 		END AS fl_visitation_on_saturday,
@@ -25,8 +27,8 @@ SELECT o.id AS sprout_provider_id,
 		END AS fl_visitation_on_sunday,
 	"bilingualSupportTypeId" AS bilingual_support_type_id,
 	CASE WHEN "bilingualSupportTypeId" = 1 THEN 'No language support offered'
-		WHEN "bilingualSupportTypeId" = 1 THEN 'No, use interpreter'
-		WHEN "bilingualSupportTypeId" = 1 THEN CONCAT('Yes, specifically these languages: ', "languagesSupported")
+		WHEN "bilingualSupportTypeId" = 2 THEN 'No, use interpreter'
+		WHEN "bilingualSupportTypeId" = 3 THEN CONCAT('Yes, specifically these languages: ', "languagesSupported")
 		END AS bilingual_support_type, 
 	"languagesSupported" AS languages_supported,
 	"holidayAvailabilityTypeId" AS holiday_availibility_type_id,
@@ -48,8 +50,7 @@ SELECT o.id AS sprout_provider_id,
 		END AS fl_has_social_workers,
 	o."createdAt" AS dt_create,
 	o."updatedAt" AS dt_update,
-	o."deletedAt" AS dt_deleted,
-	counties_serviced
+	o."deletedAt" AS dt_deleted
 FROM staging."Organizations" AS o
 JOIN staging."OrganizationContracts" AS oc 
     ON o.id = oc."contractedOrganizationId"
