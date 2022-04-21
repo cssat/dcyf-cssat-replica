@@ -1,6 +1,6 @@
 -- View: dcyf.child_referral_episode
 
-DROP MATERIALIZED VIEW IF EXISTS dcyf.child_referral_episode CASCADE;
+-- DROP MATERIALIZED VIEW IF EXISTS dcyf.child_referral_episode CASCADE;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.child_referral_episode
 TABLESPACE pg_default AS
@@ -343,7 +343,7 @@ WITH referrals AS (
 	fl_emergent,
 	dt_opd, 
 	dt_opd_imputed6 dt_opd_coalesced,
-	to_char(dt_opd_imputed6, 'YYYYMMDD')::integer AS dt_opd_int,
+	to_char(dt_opd_imputed6, 'YYYYMMDD')::int dt_opd_int,
 	initial_visit_outcome
 	FROM child_referrals_emergent
 	ORDER BY id_child, id
@@ -442,29 +442,29 @@ WITH referrals AS (
 	AND first_report.id_child = first_attended_visit.id_child
 ), child_visitation_tbl AS (
 	SELECT 
-	dcyf.make_int_pk(child_referral_episodes.id || child_referral_episodes.id_child) AS "ID_Child_Referral",
-	dcyf.make_int_pk(dt_opd_int || child_referral_episodes.id_child) AS "ID_Child_Removal_Episode",
-	child_referral_episodes.id "ID_Referral",
-	child_referral_episodes.id_child "ID_Person",
+	CONCAT_WS('_', child_referral_episodes.id_child, child_referral_episodes.id) AS "ID_Child_Referral",
+	CONCAT_WS('_', child_referral_episodes.id_child, dt_opd_int) AS "ID_Child_Removal_Episode",
+	child_referral_episodes.id "ID_Visitation_Referral",
+	CAST(child_referral_episodes.id_child AS int) "ID_Person",
 	dt_opd "DT_OPD",
 	CASE WHEN dt_opd IS NULL AND dt_opd_coalesced IS NOT NULL THEN dt_opd_coalesced ELSE NULL END AS "DT_OPD_Imputed",
-	CASE WHEN dt_opd IS NULL AND dt_opd_coalesced IS NOT NULL THEN 1 ELSE 0 END AS "FL_Imputed",
+	CASE WHEN dt_opd IS NULL AND dt_opd_coalesced IS NOT NULL THEN 1::smallint ELSE 0::smallint END AS "FL_Imputed",
 	dt_start "DT_Start",
-	dt_opd_coalesced "DT_Coalesced",
-	dt_resolves "DT_Referral_Resolved",
-	dt_first_accepted "DT_First_Accepted",
+	dt_opd_coalesced "DT_OPD_Coalesced",
+	dt_resolves::date "DT_Referral_Resolved",
+	dt_first_accepted::date "DT_First_Accepted",
 	id_first_report "ID_First_Report",
 	dt_first_report "DT_First_Report",
 	first_report_status "First_Report_Status",
 	id_first_visit "ID_First_Visit",
 	dt_first_visit "DT_First_Visit",
-	cd_first_visit_modality "CD_First_Visit_Modality",
-	first_visit_modality "First_Visit_Modality",
+	cd_first_visit_modality::smallint "CD_First_Visit_Modality",
+	first_visit_modality::varchar "First_Visit_Modality",
 	COUNT(*) OVER (PARTITION BY child_referral_episodes.id_child, dt_opd_coalesced) "Total_Referrals",
-	CASE WHEN dt_resolves <= CURRENT_TIMESTAMP THEN 1
-	ELSE 0 END AS "FL_Visitation_Ended",
-	fl_emergent "FL_Referral_72_Hour",
-	initial_visit_outcome "Outcome_72_Hour_Visit"
+	CASE WHEN dt_resolves <= CURRENT_TIMESTAMP THEN 1::smallint
+	ELSE 0::smallint END AS "FL_Visitation_Ended",
+	fl_emergent::smallint "FL_Referral_72_Hour",
+	initial_visit_outcome::varchar "Outcome_72_Hour_Visit"
 	FROM child_referral_episodes
 	LEFT OUTER JOIN visit_report_tbl
 	ON child_referral_episodes.id_child = visit_report_tbl.id_child
@@ -472,9 +472,10 @@ WITH referrals AS (
 	lEFT OUTER JOIN referral_resolutions
 	ON child_referral_episodes.id = referral_resolutions.id
 )
+
 SELECT * 
 FROM child_visitation_tbl
-ORDER BY "ID_Referral", "ID_Person"
+ORDER BY "ID_Visitation_Referral", "ID_Person"
 
 WITH DATA;
 
@@ -483,4 +484,3 @@ ALTER TABLE IF EXISTS dcyf.child_referral_episode
 
 GRANT ALL ON TABLE dcyf.child_referral_episode TO aptible;
 GRANT SELECT ON TABLE dcyf.child_referral_episode TO dcyf_users;
-

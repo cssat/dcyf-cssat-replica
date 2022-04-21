@@ -1,12 +1,12 @@
 -- View: dcyf.child_removal_supervision_level
 
-DROP MATERIALIZED VIEW IF EXISTS dcyf.child_removal_supervision_level;
+-- DROP MATERIALIZED VIEW IF EXISTS dcyf.child_removal_supervision_level;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.child_removal_supervision_level
-TABLESPACE pg_default AS 
+TABLESPACE pg_default AS
 WITH child_referral_supervision AS (
 	SELECT "ID_Child_Removal_Episode",
-	"ID_Referral",
+	"ID_Visitation_Referral",
 	"DT_Start",
 	"DT_Referral_Resolved",
 	"levelOfSupervision" supervision_level_referral
@@ -17,8 +17,8 @@ WITH child_referral_supervision AS (
 	FROM replica."ServiceReferrals"
 	WHERE "deletedAt" IS NULL
 	AND "isCurrentVersion") sl
-	ON "ID_Referral" = id
-	ORDER BY "ID_Child_Removal_Episode", "ID_Referral"
+	ON "ID_Visitation_Referral" = id
+	ORDER BY "ID_Child_Removal_Episode", "ID_Visitation_Referral"
 ), child_report_supervision AS (
 	SELECT *
 	FROM (
@@ -41,28 +41,29 @@ WITH child_referral_supervision AS (
 	supervision_level_report
 	FROM child_referral_supervision
 	LEFT OUTER JOIN child_report_supervision
-	ON "ID_Referral" = id_referral
+	ON "ID_Visitation_Referral" = id_referral
 	WHERE supervision_level_report IS NOT NULL
 	AND supervision_level_referral != supervision_level_report
 	AND NOT (supervision_level_referral IN ('Unsupervised', 'Transport Only') AND supervision_level_report IN ('Unsupervised', 'Transport Only'))
 	ORDER BY id_referral, id_report
 ), child_referral_report_supervision AS (
 	SELECT *,
-	CAST("ID_Referral" AS varchar) id_vc_referral,
+	CAST("ID_Visitation_Referral" AS varchar) id_vc_referral,
+	CASE WHEN id_report IS NOT NULL THEN id_report ELSE "ID_Visitation_Referral" END AS id_coalesced,
 	MIN("DT_Start") OVER (PARTITION BY "ID_Child_Removal_Episode", supervision_level_referral) AS "DT_Supervision_Level_Start_Referral",
 	MAX("DT_Referral_Resolved") OVER (PARTITION BY "ID_Child_Removal_Episode", supervision_level_referral) AS "DT_Supervision_Level_End_Referral",
-	CASE WHEN "ID_Referral" = MIN("ID_Referral") OVER (PARTITION BY "ID_Child_Removal_Episode", supervision_level_referral)
+	CASE WHEN "ID_Visitation_Referral" = MIN("ID_Visitation_Referral") OVER (PARTITION BY "ID_Child_Removal_Episode", supervision_level_referral)
 	THEN 1 ELSE 0 END AS fl_first_referral_supervision_level
 	FROM child_referral_supervision
 	LEFT OUTER JOIN child_report_supervision_change
-	ON "ID_Referral" = id_referral
+	ON "ID_Visitation_Referral" = id_referral
 ), child_removal_supervision_level AS (
 	SELECT 
-	dcyf.make_int_pk("ID_Child_Removal_Episode" || id_vc_referral) AS "ID_Child_Removal_Supervision_Level",
+	CONCAT_WS('_', "ID_Child_Removal_Episode", id_coalesced) AS "ID_Child_Removal_Supervision_Level",
 	"ID_Child_Removal_Episode",
 	"DT_Supervision_Level_Start_Referral",
 	"DT_Supervision_Level_End_Referral",
-	"ID_Referral" "ID_Referral_Source",
+	"ID_Visitation_Referral" "ID_Referral_Source",
 	supervision_level_referral "Supervision_Level_Referral",
 	dt_report "DT_Supervision_Level_Report",
 	id_report "ID_Visit_Source",
@@ -70,7 +71,7 @@ WITH child_referral_supervision AS (
 	FROM child_referral_report_supervision
 	WHERE fl_first_referral_supervision_level = 1
 	OR supervision_level_report IS NOT Null
-	ORDER BY "ID_Child_Removal_Episode", "ID_Referral"
+	ORDER BY "ID_Child_Removal_Episode", "ID_Visitation_Referral"
 )
 
 SELECT * FROM child_removal_supervision_level
