@@ -1,6 +1,6 @@
 -- View: dcyf.child_referral_episode
 
--- DROP MATERIALIZED VIEW IF EXISTS dcyf.child_referral_episode CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS dcyf.child_referral_episode CASCADE;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.child_referral_episode
 TABLESPACE pg_default AS
