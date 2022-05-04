@@ -116,7 +116,7 @@ LEFT JOIN dtpr
 	ON sr.id = dtpr.id
 	AND sr."organizationId" = dtpr.routed_to)
 SELECT 
-concat_ws('_'::text, id_visitation_referral, id_provider_sprout) "ID_Visitation_Referral_Provider",
+concat_ws('_'::varchar, id_visitation_referral, id_provider_sprout)::varchar "ID_Visitation_Referral_Provider",
 id_visitation_referral "ID_Visitation_Referral", 
 id_visit_plan::int "ID_Visit_Plan",
 id_visit_coodinator "ID_Visit_Coordinator", 
