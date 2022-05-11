@@ -10,7 +10,7 @@ AS
     uira."actionTakenId" AS cd_action_taken,
     uiat.name AS action_taken
    FROM dcyf.unusual_incident_report_actions uira
-     LEFT JOIN replica."UnusualIncidentActionTypes" uiat ON uira."actionTakenId" = uiat.id
+     LEFT JOIN dcyf.unusual_incident_action_types uiat ON uira."actionTakenId" = uiat.id
   WHERE uira."deletedAt" IS NULL
 WITH NO DATA;
 
