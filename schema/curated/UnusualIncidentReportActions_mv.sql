@@ -1,17 +1,21 @@
-CREATE MATERIALIZED VIEW IF NOT EXISTS curated."UnusualIncidentReportActions_mv" AS
+-- View: dcyf.unusual_incident_report_actions_dcyf
 
-SELECT  
-    uia."id",
-    uia."unusualIncidentReportId",
-    uia."actionTakenId",
-    uia."otherActionTaken",
-    uia."createdAt",
-    uia."updatedAt",
-    uia."deletedAt",
-    now() "viewRefreshedAt"
-FROM sprout."UnusualIncidentReportActions" uia
-    JOIN curated."UnusualIncidentReports_mv" uir
-        ON uia."unusualIncidentReportId" = uir.id;
+-- DROP MATERIALIZED VIEW IF EXISTS dcyf.unusual_incident_report_actions_dcyf;
 
-CREATE UNIQUE INDEX IF NOT EXISTS "UnusualIncidentReportActions_mv_pkey" 
-    ON curated."UnusualIncidentReportActions_mv" USING btree ("id");
+CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.unusual_incident_report_actions_dcyf
+TABLESPACE pg_default
+AS
+ SELECT uira.id AS id_unusual_incident_report_actions,
+    uira."unusualIncidentReportId" AS id_unusual_incident_report,
+    uira."actionTakenId" AS cd_action_taken,
+    uiat.name AS action_taken
+   FROM dcyf.unusual_incident_report_actions uira
+     LEFT JOIN replica."UnusualIncidentActionTypes" uiat ON uira."actionTakenId" = uiat.id
+  WHERE uira."deletedAt" IS NULL
+WITH NO DATA;
+
+ALTER TABLE IF EXISTS dcyf.unusual_incident_report_actions_dcyf
+    OWNER TO aptible;
+
+GRANT ALL ON TABLE dcyf.unusual_incident_report_actions_dcyf TO aptible;
+GRANT SELECT ON TABLE dcyf.unusual_incident_report_actions_dcyf TO dcyf_users;
