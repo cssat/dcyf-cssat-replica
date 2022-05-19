@@ -1,9 +1,6 @@
--- View: dcyf.visitation_referral
+DROP MATERIALIZED VIEW IF EXISTS dcyf.visitation_referral CASCADE;
+CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.visitation_referral AS
 
-DROP MATERIALIZED VIEW IF EXISTS dcyf.visitation_referral;
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.visitation_referral
-TABLESPACE pg_default AS
 WITH org AS (
 	SELECT o.id,
 		o.name
@@ -277,12 +274,6 @@ visitation_referral_type "Visitation_Referral_Type",
 cd_transportation_type "CD_Transportation_Type",
 transportation_type "Transportation_Type",
 visit_report_count::int "Visit_Report_Count",
-visit_report_attended_count::int "Visit_Report_Attended_Count"
-FROM visitation_referral_tbl 
-WITH DATA;
-
-ALTER TABLE IF EXISTS dcyf.visitation_referral
-    OWNER TO aptible;
-
-GRANT ALL ON TABLE dcyf.visitation_referral TO aptible;
-GRANT SELECT ON TABLE dcyf.visitation_referral TO dcyf_users;
+visit_report_attended_count::int "Visit_Report_Attended_Count",
+now() "DT_View_Refreshed"
+FROM visitation_referral_tbl;

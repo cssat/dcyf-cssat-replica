@@ -1,9 +1,6 @@
--- View: dcyf.visitation_referral_provider
-
 DROP MATERIALIZED VIEW IF EXISTS dcyf.visitation_referral_provider;
+CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.visitation_referral_provider AS
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.visitation_referral_provider
-TABLESPACE pg_default AS
 WITH org AS (
 	SELECT o.id,
 		o.name
@@ -137,12 +134,6 @@ END AS "DT_Provider_Decision",
 cd_provider_decision "CD_Provider_Decision",
 CASE WHEN cd_provider_decision = 1 THEN 'Accepted'::varchar
 WHEN cd_provider_decision = 2 THEN 'Rejected'::varchar 
-END AS "Provider_Decision"
-FROM visitation_referral_provider_tbl
-WITH DATA;
-
-ALTER TABLE IF EXISTS dcyf.visitation_referral_provider
-    OWNER TO aptible;
-
-GRANT ALL ON TABLE dcyf.visitation_referral_provider TO aptible;
-GRANT SELECT ON TABLE dcyf.visitation_referral_provider TO dcyf_users;
+END AS "Provider_Decision",
+now() "DT_View_Refreshed"
+FROM visitation_referral_provider_tbl;
