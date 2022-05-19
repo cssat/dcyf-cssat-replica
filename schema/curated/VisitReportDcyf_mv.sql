@@ -1,9 +1,6 @@
--- View: dcyf.visit_report_dcyf
-
 DROP MATERIALIZED VIEW IF EXISTS dcyf.visit_report_dcyf;
+CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.visit_report_dcyf AS
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.visit_report_dcyf
-TABLESPACE pg_default AS
 WITH visitation_referral AS (
 SELECT "ID_Visitation_Referral",
 	"Region",
@@ -305,7 +302,8 @@ SELECT visit_reports.id "ID_Visit",
 	END AS "CD_Visit_Type",
 	referrals."serviceType" "Visit_Type",
 	child_referral_episode."CD_Outcome_72_Hour_Visit",
-	child_referral_episode."Outcome_72_Hour_Visit"
+	child_referral_episode."Outcome_72_Hour_Visit",
+	now() "DT_View_Refreshed"
    FROM dcyf.visit_reports 
    LEFT OUTER JOIN referrals
    ON visit_reports."serviceReferralId" = referrals.id
@@ -323,12 +321,4 @@ SELECT visit_reports.id "ID_Visit",
    ON visit_reports.id = supervisors.id
    WHERE visit_reports."deletedAt" IS NULL 
    AND visit_reports."isCurrentVersion"
-   AND referrals."formVersion" = 'Ingested'
-
-WITH DATA;
-
-ALTER TABLE IF EXISTS dcyf.visit_report_dcyf
-    OWNER TO aptible;
-
-GRANT ALL ON TABLE dcyf.visit_report_dcyf TO aptible;
-GRANT SELECT ON TABLE dcyf.visit_report_dcyf TO dcyf_users;
+   AND referrals."formVersion" = 'Ingested';
