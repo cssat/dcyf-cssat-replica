@@ -1,9 +1,6 @@
--- View: dcyf.child_referral_episode
-
 DROP MATERIALIZED VIEW IF EXISTS dcyf.child_referral_episode CASCADE;
+CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.child_referral_episode AS
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.child_referral_episode
-TABLESPACE pg_default AS
 WITH referrals AS (
   SELECT
 	id,
@@ -472,15 +469,7 @@ WITH referrals AS (
 	lEFT OUTER JOIN referral_resolutions
 	ON child_referral_episodes.id = referral_resolutions.id
 )
-
-SELECT * 
+SELECT *,
+now() "DT_View_Refreshed"
 FROM child_visitation_tbl
-ORDER BY "ID_Visitation_Referral", "ID_Person"
-
-WITH DATA;
-
-ALTER TABLE IF EXISTS dcyf.child_referral_episode
-    OWNER TO aptible;
-
-GRANT ALL ON TABLE dcyf.child_referral_episode TO aptible;
-GRANT SELECT ON TABLE dcyf.child_referral_episode TO dcyf_users;
+ORDER BY "ID_Visitation_Referral", "ID_Person";

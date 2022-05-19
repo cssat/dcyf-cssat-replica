@@ -1,9 +1,6 @@
--- View: dcyf.child_removal_supervision_level
+DROP MATERIALIZED VIEW IF EXISTS dcyf.child_removal_supervision_level;
+CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.child_removal_supervision_level AS
 
--- DROP MATERIALIZED VIEW IF EXISTS dcyf.child_removal_supervision_level;
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.child_removal_supervision_level
-TABLESPACE pg_default AS
 WITH child_referral_supervision AS (
 	SELECT "ID_Child_Removal_Episode",
 	"ID_Visitation_Referral",
@@ -73,13 +70,6 @@ WITH child_referral_supervision AS (
 	OR supervision_level_report IS NOT Null
 	ORDER BY "ID_Child_Removal_Episode", "ID_Visitation_Referral"
 )
-
-SELECT * FROM child_removal_supervision_level
-
-WITH DATA;
-
-ALTER TABLE IF EXISTS dcyf.child_removal_supervision_level
-    OWNER TO aptible;
-
-GRANT ALL ON TABLE dcyf.child_removal_supervision_level TO aptible;
-GRANT SELECT ON TABLE dcyf.child_removal_supervision_level TO dcyf_users;
+SELECT *,
+now() "DT_View_Refreshed"
+FROM child_removal_supervision_level;

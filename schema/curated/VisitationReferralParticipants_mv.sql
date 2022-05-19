@@ -1,9 +1,6 @@
--- View: dcyf.visitation_referral_participant
+DROP MATERIALIZED VIEW IF EXISTS dcyf.visitation_referral_participant;
+CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.visitation_referral_participant AS 
 
--- DROP MATERIALIZED VIEW IF EXISTS dcyf.visitation_referral_participant;
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.visitation_referral_participant
-TABLESPACE pg_default AS 
 WITH dcyf_orgs AS (
 	SELECT o.id 
 	FROM replica."Organizations" o
@@ -129,13 +126,6 @@ WITH dcyf_orgs AS (
 	AND dedup_person_details.id_person = safety_issues.id_person
 	AND role = "issue_exhibitor_role"
 	ORDER BY dedup_person_details.id, dedup_person_details.id_person)
-
-SELECT * FROM visitation_referral_participant
-
-WITH DATA;
-
-ALTER TABLE IF EXISTS dcyf.visitation_referral_participant
-    OWNER TO aptible;
-
-GRANT ALL ON TABLE dcyf.visitation_referral_participant TO aptible;
-GRANT SELECT ON TABLE dcyf.visitation_referral_participant TO dcyf_users;
+SELECT *,
+now() "DT_View_Refreshed"
+FROM visitation_referral_participant;

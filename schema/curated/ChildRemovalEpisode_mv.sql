@@ -1,9 +1,6 @@
--- View: dcyf.child_removal_episode
+DROP MATERIALIZED VIEW IF EXISTS dcyf.child_removal_episode;
+CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.child_removal_episode AS
 
--- DROP MATERIALIZED VIEW IF EXISTS dcyf.child_removal_episode;
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.child_removal_episode
-TABLESPACE pg_default AS
 WITH child_removal_episode AS (
 	SELECT "ID_Child_Removal_Episode",
 	"ID_First_Referral",
@@ -76,13 +73,6 @@ WITH child_removal_episode AS (
 	WHERE "ID_Visitation_Referral" = id_min_referral
 	ORDER BY "ID_Person", "DT_OPD_Coalesced"
 )
-	
-SELECT * FROM child_removal_episode
-
-WITH DATA;
-
-ALTER TABLE IF EXISTS dcyf.child_removal_episode
-    OWNER TO aptible;
-
-GRANT ALL ON TABLE dcyf.child_removal_episode TO aptible;
-GRANT SELECT ON TABLE dcyf.child_removal_episode TO dcyf_users;
+SELECT *,
+now() "DT_View_Refreshed"
+FROM child_removal_episode;
