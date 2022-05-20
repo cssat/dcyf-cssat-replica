@@ -14,17 +14,19 @@ conn <- dbConnect(RPostgres::Postgres(),
 
 
 # Tables
-table_names <- c("child_referral_episode", 
-                 "child_removal_episode", 
-                 "child_removal_supervision_level", 
+table_names <- c(
+  "child_referral_episode",
+                 "child_removal_episode",
+                 "child_removal_supervision_level",
                  "sprout_provider_county_lookup",
-                 "sprout_provider_office_lookup", 
-                 "sprout_provider_region_lookup", 
-                 "sprout_providers", 
+                 "sprout_provider_office_lookup",
+                 "sprout_provider_region_lookup",
+                 "sprout_providers",
                  "unusual_incident_report_dcyf",
-                 "visitation_referral", 
-                 "visitation_referral_participant", 
-                 "visitation_referral_provider")
+                 "visitation_referral",
+                 "visitation_referral_participant",
+                 "visitation_referral_provider",
+                 "visit_report_dcyf")
 
 # Function to query db
 extract_df <- function(tbl_name) {

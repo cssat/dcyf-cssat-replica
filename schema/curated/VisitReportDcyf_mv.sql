@@ -178,7 +178,7 @@ WHERE "isCurrentVersion"
 	UNION 
 	SELECT * FROM referral_parent
 ), attendance AS (
-	SELECT id,
+	SELECT DISTINCT id,
 	MAX(fl_p_missed) OVER (PARTITION BY id, referral_id) AS fl_parent_missed,
 	MAX(fl_missed) OVER (PARTITION BY id, referral_id) AS fl_any_missed
 	FROM (
@@ -210,16 +210,22 @@ WHERE "isCurrentVersion"
 	AND rp.last_name = va.last_name
 	AND rp.relationship = va.relationship) x
 ), supervisors AS (
-SELECT vr.id, 
-u.id "ID_Visit_Supervisor",
-CONCAT(u."firstName", ' ', u."lastName") "Visit_Supervisor_Name"
-FROM dcyf.visit_reports vr
-LEFT OUTER JOIN replica."UserAssignments" ua
-ON vr."versionId" = ua."assignmentId"
-LEFT OUTER JOIN replica."Users" u
-ON ua."userId" = u.id
-WHERE vr."isCurrentVersion"
-AND vr."deletedAt" IS NULL
+	SELECT id,
+	"ID_Visit_Supervisor",
+	"Visit_Supervisor_Name"
+	FROM (
+		SELECT vr.id, 
+		u.id "ID_Visit_Supervisor",
+		CONCAT(u."firstName", ' ', u."lastName") "Visit_Supervisor_Name",
+		ROW_NUMBER() OVER (PARTITION BY vr.id) AS row_num
+		FROM dcyf.visit_reports vr
+		LEFT OUTER JOIN replica."UserAssignments" ua
+		ON vr."versionId" = ua."assignmentId"
+		LEFT OUTER JOIN replica."Users" u
+		ON ua."userId" = u.id
+		WHERE vr."isCurrentVersion"
+		AND vr."deletedAt" IS NULL) x
+	WHERE row_num = 1
 ), referrals AS (
 	SELECT id, 
 	"formVersion", 
@@ -246,15 +252,15 @@ SELECT visit_reports.id "ID_Visit",
 	visit_reports.date "DT_Visit_Stop",
     visit_reports."endTime" "Time_Visit_Stop",
 	CASE WHEN visit_reports.virtual THEN 1
-	WHEN NOT visit_reports.virtual OR visit_reports.virtual THEN 2
+	WHEN NOT visit_reports.virtual OR visit_reports.virtual IS NULL THEN 2
 	WHEN visit_reports."reportType" = 'Missed-no-show' THEN 3
 	END AS "CD_Visit_Modality",
 	CASE WHEN visit_reports.virtual THEN 'Virtual'
-	WHEN NOT visit_reports.virtual OR visit_reports.virtual THEN 'In-person'
+	WHEN NOT visit_reports.virtual OR visit_reports.virtual IS NULL THEN 'In-person'
 	WHEN visit_reports."reportType" = 'Missed-no-show' THEN 'Missed-no-show'
 	END AS "Visit_Modality",
 	CASE WHEN visit_reports.virtual THEN 1 ELSE 0 END AS "FL_Virtual",
-	CASE WHEN NOT visit_reports.virtual OR visit_reports.virtual THEN 1 ELSE 0 END AS "FL_In_Person",
+	CASE WHEN NOT visit_reports.virtual OR visit_reports.virtual IS NULL THEN 1 ELSE 0 END AS "FL_In_Person",
 	attendance.fl_parent_missed "FL_Any_Parent_Missed",
 	attendance.fl_any_missed "FL_Any_Missed",
 	visit_observation."FL_Parent_On_Time",
