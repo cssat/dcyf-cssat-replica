@@ -5,3 +5,4 @@
 dcyf-cssat-ssh-key.pem
 dcyf-replica-user.pem
 .env
+.DS_Store
