@@ -28,7 +28,8 @@ AS
     uir."approvedAt"::date AS dt_approved,
     now() AS dt_view_refresh
    FROM dcyf.unusual_incident_reports uir
-     INNER JOIN dcyf.service_referrals sr ON uir."serviceReferralId" = sr.id AND sr."isCurrentVersion" AND sr."deletedAt" IS NULL AND sr."formVersion" = 'Ingested'
+     INNER JOIN dcyf.service_referrals sr 
+	 ON uir."serviceReferralId" = sr.id AND sr."isCurrentVersion" AND sr."deletedAt" IS NULL AND sr."formVersion" = 'Ingested'
      JOIN dcyf.sprout_providers org ON org.id_provider_sprout = sr."organizationId"
      JOIN replica."Users" aid ON uir."approvedById" = aid.id
      JOIN replica."Users" sid ON uir."submittedById" = sid.id

@@ -1,8 +1,9 @@
+/* Erik's code, kept for now as reference */
 WITH org AS (
 	SELECT o.id,
 		o.name
 	FROM staging."Organizations" AS o
-    JOIN staging."OrganizationContracts" AS oc 
+    JOIN staging."OrganizationContracts" AS oc
         ON o.id = oc."contractedOrganizationId"
         AND oc."contractOwnerId" = 21
 ), sr AS (
@@ -40,8 +41,8 @@ WITH org AS (
 		ON uir."serviceReferralId" = sr.id
 		AND sr."isCurrentVersion"
 		AND sr."deletedAt" IS NULL
-	JOIN staging."Organizations" AS org 
-		ON org.id = sr."organizationId" 
+	JOIN staging."Organizations" AS org
+		ON org.id = sr."organizationId"
 	JOIN staging."Users" AS aid
 		ON uir."approvedById" = aid.id
 	JOIN staging."Users" AS sid
@@ -59,10 +60,10 @@ SELECT uip."id" AS ID_SPROUT_Unusual_Incident_Report_Participant,
 	FROM staging."UnusualIncidentInvolvedParties" AS uip
     JOIN uir AS uir
         ON uip."unusualIncidentReportId" = uir.ID_SPROUT_Unusual_Incident_Report
-	WHERE uip."deletedAt" IS NULL 
+	WHERE uip."deletedAt" IS NULL
 		AND uir.DT_Incident IS NOT NULL
 ), uir_actions AS (
-	SELECT  
+	SELECT
     	uia."id" AS ID_SPROUT_Unusual_Incident_Report_Actions,
     	uia."unusualIncidentReportId" AS ID_SPROUT_Unusual_Incident_Report,
     	uia."actionTakenId" AS CD_Action_Taken,
