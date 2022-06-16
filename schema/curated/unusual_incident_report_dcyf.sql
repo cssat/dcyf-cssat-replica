@@ -26,9 +26,9 @@ AS
     concat(sid."firstName", ' ', sid."lastName") AS submitted_by_name,
     concat(aid."firstName", ' ', aid."lastName") AS approved_by_name,
     uir."approvedAt"::date AS dt_approved,
-    now() AS dt_view_refresh
+    now() AS dt_view_refreshed
    FROM dcyf.unusual_incident_reports uir
-     INNER JOIN dcyf.service_referrals sr 
+     INNER JOIN dcyf.service_referrals sr
 	 ON uir."serviceReferralId" = sr.id AND sr."isCurrentVersion" AND sr."deletedAt" IS NULL AND sr."formVersion" = 'Ingested'
      JOIN dcyf.sprout_providers org ON org.id_provider_sprout = sr."organizationId"
      JOIN replica."Users" aid ON uir."approvedById" = aid.id
