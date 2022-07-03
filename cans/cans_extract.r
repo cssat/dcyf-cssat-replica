@@ -1,18 +1,5 @@
 ## This code was written in February/March 2022
 ## Updating Joe's original code to fill in gaps
-
-## Assumes you have an .Renviron file set up defining 
-# CANS_F_URL
-# CANS_F_DB
-# CANS_F_USER
-# CANS_F_PW
-## All of these should be viewable after running the following command lines:
-#  aptible login --email gregort@uw.edu 
-#  aptible db:tunnel cans-db-production --port 64453
-
-## Where should the output go?
-output_dir = "cans-output"
-
 library(mongolite)
 library(dplyr)
 library(tidyr)
@@ -20,6 +7,20 @@ library(purrr)
 library(readr)
 library(stringr)
 library(lubridate)
+
+## Assumes you have an .Renviron file set up defining
+# CANS_F_URL
+# CANS_F_DB
+# CANS_F_USER
+# CANS_F_PW
+## All of these should be viewable after running the following command lines:
+#  aptible login --email gregort@uw.edu
+#  aptible db:tunnel cans-db-production --port 64453
+
+## Where should the output go?
+output_dir = "~/Users/gregor/cans-f"
+
+
 
 ## command line connection works with (can use mongosh or mongo)
 ## mongo "mongodb://<user>:<password>@localhost.aptible.in:<port>/<db>?tls=true"
@@ -36,7 +37,7 @@ con = mongo(
 
 ## Testing
 # referrals = mongo(
-#   collection = "referrals", 
+#   collection = "referrals",
 #   url = Sys.getenv("CANS_F_URL"),
 #   verbose = TRUE, ## consider switching off
 #   options = ssl_options(weak_cert_validation = T)
@@ -89,20 +90,20 @@ forms = forms %>% filter(caseId %in% status$caseId)
 timestamps = timestamps %>% filter(caseId %in% status$caseId)
 
 
-cans_providers = select(providers, 
+cans_providers = select(providers,
   id_organization_sprout = providerId,
   name,
   phone,
   address
 )
 
-facesheets <- forms %>% 
+facesheets <- forms %>%
   .$FaceSheet %>%
   as_tibble()
 
 eois <- bind_cols(
   caseId = forms$caseId,
-  forms %>% 
+  forms %>%
     .$EndOfIntervention %>%
     as_tibble()
 )
@@ -133,7 +134,7 @@ cans_common <- referrals %>%
   left_join(
     facesheets,
     by = c("caseId" = "CaseID")
-  ) %>% 
+  ) %>%
   left_join(
     eois,
     by = c("caseId")
@@ -143,7 +144,7 @@ cans_common <- referrals %>%
     tx_case_name = ifelse(Family=="", NA, tolower(Family)),
     tx_dcyf_office = ifelse(Office=="", NA, tolower(Office)),
     dt_referral_received = lubridate::date(DateReferral),
-    dt_iff = lubridate::date(DateFirstMeeting), 
+    dt_iff = lubridate::date(DateFirstMeeting),
     epoch_fpc = ifelse(assignment1 == -1, NA, assignment1),
     dt_fpc = lubridate::as_datetime(as.POSIXct(epoch_fpc/1000, origin="1970-01-01")),
     epoch_trans = ifelse(assignment2 == -1, NA, assignment2),
@@ -157,13 +158,13 @@ cans_common <- referrals %>%
     id_case_sprout = caseId, #Sprout UUID
     id_organization_sprout = providerId, #Sprout Provider Id
     dt_cans_submitted, #Date of submission
-    id_cihs_referral = ReferralID, #Placeholder, CaseId is not collected. prob synonymous 
+    id_cihs_referral = ReferralID, #Placeholder, CaseId is not collected. prob synonymous
     tx_case_name, #Source of Family Name
     tx_dcyf_office, #Office serving case
     tx_therapist_organization = Agency,
     tx_therapist = Provider, # The therapist
     tx_service_code = ServiceType,
-    dt_referral_received, #Date referral received 
+    dt_referral_received, #Date referral received
     dt_iff, #Date iff
     dt_fpc, #Date of Family Plan for Change
     dt_trans, #Date of Trans CANS
@@ -171,14 +172,14 @@ cans_common <- referrals %>%
     int_caregiver_count = NumCaregivers,
     int_child_count = NumChildren,
     tx_reason_for_referral = ReasonForServiceReferral,
-    tx_reason_for_eoi = ReasonForEOI, 
+    tx_reason_for_eoi = ReasonForEOI,
     tx_reason_for_not_completed = NotCompleted, #Description if service not needed
     tx_natural_resources, # Resources
     tx_additional_supports
-  ) %>% 
+  ) %>%
   filter(
     id_organization_sprout != 1
-  ) 
+  )
 
 if(debug) {
   ## these are often the same. following Matt's advice we will
@@ -186,7 +187,7 @@ if(debug) {
   assessment = "ChildFunctioningList"
   fda = lapply(forms[["data"]][["Assessments"]], "[[", assessment)
   fa = lapply(forms$Assessments, "[[", assessment)
-    
+
   for (i in sample(seq_along(fa), size = 20)) {
     print(i)
     print(identical(fda[[i]], fa[[i]]))
@@ -247,6 +248,10 @@ for(i in seq_along(output)) {
 
 ## Adding providers and common
 output = c(output, cans_providers = list(cans_providers), cans_common = list(cans_common))
+
+## Add dt of extract
+now = now()
+output = lapply(output, cbind, dt_extracted = now)
 
 ## Inspecting
 if(debug) {
