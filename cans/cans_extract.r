@@ -18,7 +18,7 @@ library(lubridate)
 #  aptible db:tunnel cans-db-production --port 64453
 
 ## Where should the output go?
-output_dir = "~/Users/gregor/cans-f"
+output_dir = "~/cans-f"
 
 
 
@@ -269,4 +269,10 @@ for(i in seq_along(output)) {
   )
 }
 
-
+rowcounts = sapply(output, nrow)
+write_delim(
+  as.data.frame(rowcounts),
+  file = paste0(output_dir, "/", paste0("cans_rowcounts_", today(), ".csv")),
+  delim = "|",
+  col_names = FALSE
+)
