@@ -1,3 +1,6 @@
+DROP MATERIALIZED VIEW IF EXISTS dcyf.visit_report_participant;
+CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.visit_report_participant AS
+
 WITH referral_child AS (
 	SELECT 
 	id,
@@ -21,11 +24,14 @@ WITH referral_child AS (
 	WHERE "isCurrentVersion"
 	AND "deletedAt" IS NULL
 ), referral_participants AS (
+	SELECT DISTINCT *,
+	person_id::bigint id_person 
+	FROM (
 	SELECT * FROM referral_child
 	UNION 
-	SELECT * FROM referral_parent
+	SELECT * FROM referral_parent) u
 ), visit_attendees AS (
-	SELECT
+	SELECT DISTINCT
 	id,
 	"serviceReferralId",
 	"reportType",
@@ -40,13 +46,9 @@ WITH referral_child AS (
 	AND "deletedAt" IS NULL
 ), visit_participants AS (
 	SELECT 
-	concat_ws('_'::text, rp.person_id, va.id) AS "ID_Visit_Report_Participant",
 	va.id "ID_Visit_Report",
 	vrp."ID_Visitation_Referral_Participant",
 	va."serviceReferralId" "ID_Visitation_Referral",
-	va."cancellationType",
-	va."causedBy",
-	va.relationship,
 	CASE WHEN va."cancellationType" = 'No-show' AND va."causedBy" = va.relationship THEN 1
 	ELSE 0 END AS "FL_No_Show",
 	rp.person_id "ID_Person",
@@ -60,11 +62,42 @@ WITH referral_child AS (
 	AND va.relationship = rp.relationship
 	AND va.first_name = rp.first_name
 	AND va.last_name = rp.last_name
-	LEFT JOIN (SELECT "ID_Visitation_Referral_Participant", "ID_Visitation_Referral", "ID_Person" from dcyf.visitation_referral_participant) vrp
+	LEFT JOIN (SELECT "ID_Visitation_Referral_Participant", "ID_Visitation_Referral", "ID_Person", "Role" from dcyf.visitation_referral_participant) vrp
 	ON va."serviceReferralId" = vrp."ID_Visitation_Referral"
-	AND rp.person_id = vrp."ID_Person"
-	WHERE "formVersion" = 'Ingested')
-
---SELECT COUNT(*), relationship FROM visit_participants GROUP BY relationship
---SELECT * FROM visit_attendees WHERE "reportType" = 'Sibling' AND relationship = 'Child'
-SELECT * FROM visit_participants
+	AND rp.id_person = vrp."ID_Person"
+	AND va.relationship = vrp."Role"
+	WHERE "formVersion" = 'Ingested'
+), visit_report_participant AS (
+	SELECT *,
+	CASE WHEN "Role" = 'CASA' THEN 3
+	WHEN "Role" = 'Case Manager' THEN 4
+	WHEN "Role" = 'Child' THEN 1
+	WHEN "Role" = 'CPA Worker' THEN 5
+	WHEN "Role" = 'Custodial Parent' THEN 6
+	WHEN "Role" = 'Family Member' THEN 7
+	WHEN "Role" = 'Foster Parent' THEN 8
+	WHEN "Role" = 'Guardian Ad Litem' THEN 9
+	WHEN "Role" = 'Parent' THEN 2
+	WHEN "Role" = 'Provider' THEN 10
+	WHEN "Role" = 'Relative Caregiver' THEN 11
+	WHEN "Role" = 'Sibling' THEN 12
+	WHEN "Role" = 'Social Worker' THEN 13
+	WHEN "Role" = 'Other' THEN 14
+	WHEN "Role" IS NULL THEN 15
+	ELSE 0 END AS "CD_Role"
+	FROM visit_participants
+	ORDER BY "ID_Visit_Report", "ID_Person")
+	
+SELECT
+CASE WHEN "ID_Person" IS NULL THEN concat_ws('_'::varchar, concat('R', ROW_NUMBER() OVER()), "ID_Visit_Report", "CD_Role") 
+ELSE concat_ws('_'::varchar, "ID_Person", "ID_Visit_Report", "CD_Role") 
+END AS "ID_Visit_Report_Participant",
+"ID_Visit_Report",
+"ID_Visitation_Referral_Participant"::varchar,
+"ID_Visitation_Referral",
+"FL_No_Show"::smallint,
+"ID_Person"::int, 
+"CD_Role",
+"Role"::varchar,
+now() "DT_View_Refreshed"
+FROM visit_report_participant

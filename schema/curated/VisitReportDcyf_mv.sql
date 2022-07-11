@@ -9,7 +9,6 @@ SELECT "ID_Visitation_Referral",
 	"CD_Office",
 	"ID_Worker",
 	"Worker_Name",
-	"DT_First_Visit_Scheduled",
 	"Parent_Count",
 	"Child_Count"
 	FROM dcyf.visitation_referral
@@ -234,10 +233,38 @@ WHERE "isCurrentVersion"
 	WHERE "isCurrentVersion"
 	AND "deletedAt" IS NULL
 	AND "formVersion" = 'Ingested'
+), org_version AS (
+	SELECT *,
+	CASE WHEN version_end IS NULL THEN NOW()
+	ELSE version_end END AS version_ended_at
+	FROM (
+		SELECT *,
+		LEAD(version_created_at, 1) OVER(PARTITION BY id ORDER BY version_created_at) - interval '1 millisecond' version_end
+		FROM ( 
+			SELECT 
+			id,
+			"organizationId",
+			MIN("versionCreatedAt") version_created_at
+			FROM dcyf.service_referrals
+			WHERE "deletedAt" IS NULL
+			AND "formVersion" = 'Ingested'
+			GROUP BY id, "organizationId"
+		) v1
+	) v2
+), referral_actions AS (
+	SELECT DISTINCT
+	"ID_Visitation_Referral",
+	"ID_Organization",
+	"CD_Event",
+	MAX("DT_Event") max_dt_event
+	FROM dcyf.visitation_referral_action_log
+	WHERE "CD_Event" IN (13, 8, 10)
+	GROUP BY "ID_Visitation_Referral", "ID_Organization", "CD_Event"
 ) 
 SELECT visit_reports.id "ID_Visit",
  	visit_reports."serviceReferralId" "ID_Visitation_Referral",
 	visit_reports."caseNumber" "ID_Case",
+	org_version."organizationId" "ID_Organization",
 	visitation_referral."CD_Region",
 	visitation_referral."Region",
 	visitation_referral."CD_Office",
@@ -246,7 +273,9 @@ SELECT visit_reports.id "ID_Visit",
 	visitation_referral."Worker_Name",
 	supervisors."ID_Visit_Supervisor",
 	supervisors."Visit_Supervisor_Name",
-	visitation_referral."DT_First_Visit_Scheduled",
+	dpr.max_dt_event "DT_Provider_Received",
+	dpa.max_dt_event "DT_Provider_Accepted",
+	dps.max_dt_event "DT_First_Visit_Scheduled",
 	visit_reports.date "DT_Visit_Start",
 	visit_reports."time" "Time_Visit_Start",
 	visit_reports.date "DT_Visit_Stop",
@@ -325,6 +354,22 @@ SELECT visit_reports.id "ID_Visit",
    ON visit_reports.id = attendance.id
    LEFT OUTER JOIN supervisors
    ON visit_reports.id = supervisors.id
+   LEFT OUTER JOIN org_version
+   ON visit_reports."serviceReferralId" = org_version.id
+   AND visit_reports."createdAt" >= org_version.version_created_at
+   AND visit_reports."createdAt" <= org_version.version_ended_at
+   LEFT OUTER JOIN (SELECT * FROM referral_actions WHERE "CD_Event" = 13) dpr
+   ON visit_reports."serviceReferralId" = dpr."ID_Visitation_Referral"
+   AND org_version."organizationId" = dpr."ID_Organization"
+   AND visit_reports.date >= dpr.max_dt_event
+   LEFT OUTER JOIN (SELECT * FROM referral_actions WHERE "CD_Event" = 8) dpa
+   ON visit_reports."serviceReferralId" = dpa."ID_Visitation_Referral"
+   AND org_version."organizationId" = dpa."ID_Organization"
+   AND visit_reports.date >= dpa.max_dt_event
+   LEFT OUTER JOIN (SELECT * FROM referral_actions WHERE "CD_Event" = 10) dps
+   ON visit_reports."serviceReferralId" = dps."ID_Visitation_Referral"
+   AND org_version."organizationId" = dps."ID_Organization"
+   AND visit_reports.date >= dps.max_dt_event
    WHERE visit_reports."deletedAt" IS NULL 
    AND visit_reports."isCurrentVersion"
    AND referrals."formVersion" = 'Ingested';
