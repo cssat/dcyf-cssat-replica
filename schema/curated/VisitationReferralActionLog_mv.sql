@@ -8,6 +8,7 @@ WITH timeline AS (
 	date dt_event,
 	CASE WHEN "StageTypeId" = 7 THEN "createdAt"
 	ELSE timestamp END AS ts_event,
+	"updatedAt",
 	"StageTypeId" cd_event
 	FROM dcyf.service_referral_timeline_stages
 ), emergent_orgs AS (
@@ -28,6 +29,7 @@ WITH timeline AS (
 	org_id id_organization,
 	lag_updated_at::date dt_event,
 	lag_updated_at ts_event,
+	NULL::timestamp "updatedAt",
 	13 cd_event
 	FROM (
 		SELECT DISTINCT id,
@@ -58,7 +60,8 @@ WITH timeline AS (
 	organization_name "Organization_Name",
 	id_organization "ID_Organization",
 	dt_event "DT_Event",
-	ts_event "TS_Event",
+	CASE WHEN ts_event is NULL THEN "updatedAt"
+	ELSE ts_event END AS "TS_Event",
 	CASE WHEN id_organization IN (SELECT destination_org_id FROM emergent_orgs) AND cd_event = 7 
 	THEN 13 ELSE cd_event END AS "CD_Event",
 	CASE WHEN cd_event = 13 OR (id_organization IN (SELECT destination_org_id FROM emergent_orgs) AND cd_event = 7) 
