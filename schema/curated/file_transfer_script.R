@@ -4,12 +4,12 @@ library(tidyverse)
 library(RCurl)
 
 # Connection
-conn <- dbConnect(RPostgres::Postgres(),
-                  dbname = "db",
-                  host = "localhost.aptible.in",
-                  port = "64444",
-                  user = "aptible",
-                  password = "DrhkmT-ldghOrkxW71WLbJAQdRsP2WuQ",
+conn <- dbConnect(Postgres(),
+                  dbname = Sys.getenv("DBNAME"),
+                  host = Sys.getenv("HOST"),
+                  port = Sys.getenv("POSRT"),
+                  user = Sys.getenv("USER"),
+                  password = Sys.getenv("PASSWORD"),
                   timezone = "America/Los_Angeles")
 
 
@@ -30,7 +30,8 @@ table_names <- c(
   "visit_report_participant",
   "visitation_referral_action_log",
   "unusual_incident_report_actions_dcyf",
-  "unusual_incident_report_participant"
+  "unusual_incident_report_participant",
+  "transport_detail"
   )
 
 # Function to query db
@@ -45,7 +46,7 @@ extract_df <- function(tbl_name) {
 }
 
 # Set local directory
-date_path <- paste0("/Volumes/GoogleDrive/Shared drives/cssat/Sprout Family Time Data Warehouse/cssat_dcyf_transfer_files/", Sys.Date())
+date_path <- paste0("/Users/jooreea/OneDrive - UW/General/Data Team/Sprout DCYF OIAA Data/Transfer Files/", Sys.Date())
 
 if(dir.exists(date_path) == FALSE) {
   
@@ -54,7 +55,7 @@ if(dir.exists(date_path) == FALSE) {
 }
 
 row_counts <- c()
-timestamps1 <- as.POSIXct(c())
+timestamps <- as.POSIXct(c())
 
 # Loop to execute db query and write and transfer file
 for(i in table_names) {
