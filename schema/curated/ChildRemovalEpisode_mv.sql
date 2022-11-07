@@ -4,7 +4,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.child_removal_episode AS
 WITH child_removal_episode AS (
 	SELECT "ID_Child_Removal_Episode",
 	"ID_First_Referral",
-	"ID_First_Visit_Attended" AS "ID_First_Visit",
+	id_first_attended_visit "ID_First_Attended_Visit",
 	"ID_Person",
 	"DT_OPD",
 	"DT_OPD_Imputed",
@@ -12,8 +12,8 @@ WITH child_removal_episode AS (
 	"DT_Start",
 	"DT_OPD_Coalesced",
 	"DT_Last_Referral_Resolved",
-	"DT_First_Visit_Attended" AS "DT_First_Visit",
-	CASE WHEN "DT_First_Reported" < "DT_First_Visit_Attended" THEN "DT_First_Reported" ELSE NULL END AS "DT_First_Visit_Attempt",
+	dt_first_attended_visit "DT_First_Attended_Visit",
+	CASE WHEN "DT_First_Reported" < "DT_First_Attended_Visit" THEN "DT_First_Reported" ELSE NULL END AS "DT_First_Visit_Attempt",
 	"CD_First_Visit_Attended_Modality" AS "CD_First_Visit_Modality",
 	CASE WHEN "CD_First_Visit_Attended_Modality" = 1 THEN 'Virtual'::varchar ELSE 'In Person'::varchar END AS "First_Visit_Modality",
 	"Total_Referrals"::smallint "Total_Referrals",
@@ -41,9 +41,9 @@ WITH child_removal_episode AS (
 	FROM (
 	SELECT *,
 	MIN(id_first_referral) OVER (PARTITION BY "ID_Child_Removal_Episode") AS "ID_First_Referral",
-	MIN("ID_First_Visit") OVER (PARTITION BY "ID_Child_Removal_Episode") AS "ID_First_Visit_Attended",
-	FIRST_VALUE("DT_First_Visit") OVER (PARTITION BY "ID_Child_Removal_Episode" ORDER BY "ID_First_Visit") AS "DT_First_Visit_Attended",
-	FIRST_VALUE("DT_First_Report") OVER (PARTITION BY "ID_Child_Removal_Episode" ORDER BY "ID_First_Visit") AS "DT_First_Reported",
+	MIN("ID_First_Attended_Visit") OVER (PARTITION BY "ID_Child_Removal_Episode") AS "id_first_attended_visit",
+	FIRST_VALUE("DT_First_Attended_Visit") OVER (PARTITION BY "ID_Child_Removal_Episode" ORDER BY "ID_First_Attended_Visit") AS "dt_first_attended_visit",
+	FIRST_VALUE("DT_First_Report") OVER (PARTITION BY "ID_Child_Removal_Episode" ORDER BY "ID_First_Report") AS "DT_First_Reported",
 	MAX(dt_last_referral_resolved) OVER (PARTITION BY "ID_Child_Removal_Episode") AS "DT_Last_Referral_Resolved",
 	MIN(dt_first_start) OVER (PARTITION BY "ID_Child_Removal_Episode") AS "DT_First_Start",
 	MIN(cd_first_visit_modality) OVER (PARTITION BY "ID_Child_Removal_Episode") AS "CD_First_Visit_Attended_Modality",
@@ -54,11 +54,11 @@ WITH child_removal_episode AS (
 	FROM (
 		SELECT *,
 		MIN("ID_Visitation_Referral") OVER (PARTITION BY "ID_Child_Removal_Episode") AS id_min_referral,
-		CASE WHEN "ID_First_Visit" = MIN("ID_First_Visit") OVER (PARTITION BY "ID_Child_Removal_Episode") 
+		CASE WHEN "ID_First_Attended_Visit" = MIN("ID_First_Attended_Visit") OVER (PARTITION BY "ID_Child_Removal_Episode") 
 		THEN "ID_Visitation_Referral" ELSE NULL END AS id_first_referral,
-		CASE WHEN "ID_First_Visit" = MIN("ID_First_Visit") OVER (PARTITION BY "ID_Child_Removal_Episode") 
+		CASE WHEN "ID_First_Attended_Visit" = MIN("ID_First_Attended_Visit") OVER (PARTITION BY "ID_Child_Removal_Episode") 
 		THEN "DT_Start" ELSE NULL END AS dt_first_start,
-		CASE WHEN "ID_First_Visit" = MIN("ID_First_Visit") OVER (PARTITION BY "ID_Child_Removal_Episode") 
+		CASE WHEN "ID_First_Attended_Visit" = MIN("ID_First_Attended_Visit") OVER (PARTITION BY "ID_Child_Removal_Episode") 
 		THEN "CD_First_Visit_Modality" ELSE NULL END AS cd_first_visit_modality,
 		CASE WHEN "ID_Visitation_Referral" = MAX("ID_Visitation_Referral") OVER (PARTITION BY "ID_Child_Removal_Episode") 
 		THEN "DT_Referral_Resolved" ELSE NULL END AS dt_last_referral_resolved,
@@ -66,9 +66,10 @@ WITH child_removal_episode AS (
 		THEN "FL_Visitation_Ended" ELSE NULL END AS fl_visitation_ended,
 		CASE WHEN "ID_Visitation_Referral" = MIN("ID_Visitation_Referral") OVER (PARTITION BY "ID_Child_Removal_Episode") 
 		THEN "FL_Referral_72_Hour" ELSE NULL END AS fl_referral_72_hr,
-		CASE WHEN "FL_Referral_72_Hour" = 1 THEN "Outcome_72_Hour_Visit" ELSE NULL END AS outcome_72_hour_visit
+		CASE WHEN "FL_Referral_72_Hour" = 1 THEN "Outcome_72_Hour_Visit" ELSE NULL END AS outcome_72_hour_visit,
+		COUNT(*) OVER (PARTITION BY "ID_Person", "DT_OPD_Coalesced") "Total_Referrals"
 		FROM dcyf.child_referral_episode
-		ORDER BY "ID_Child_Removal_Episode", "ID_Visitation_Referral", "ID_First_Visit") cre
+		ORDER BY "ID_Child_Removal_Episode", "ID_Visitation_Referral", "ID_First_Attended_Visit") cre
 	) crex
 	WHERE "ID_Visitation_Referral" = id_min_referral
 	ORDER BY "ID_Person", "DT_OPD_Coalesced"

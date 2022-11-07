@@ -14,3 +14,4 @@ REFRESH MATERIALIZED VIEW dcyf.visitation_referral_action_log;
 REFRESH MATERIALIZED VIEW dcyf.unusual_incident_report_dcyf;
 REFRESH MATERIALIZED VIEW dcyf.unusual_incident_report_actions_dcyf;
 REFRESH MATERIALIZED VIEW dcyf.unusual_incident_report_participant;
+REFRESH MATERIALIZED VIEW dcyf.transport_detail;

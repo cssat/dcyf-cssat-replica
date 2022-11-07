@@ -453,11 +453,10 @@ WITH referrals AS (
 	id_first_report "ID_First_Report",
 	dt_first_report "DT_First_Report",
 	first_report_status "First_Report_Status",
-	id_first_visit "ID_First_Visit",
-	dt_first_visit "DT_First_Visit",
+	id_first_visit "ID_First_Attended_Visit",
+	dt_first_visit "DT_First_Attended_Visit",
 	cd_first_visit_modality::smallint "CD_First_Visit_Modality",
 	first_visit_modality::varchar "First_Visit_Modality",
-	COUNT(*) OVER (PARTITION BY child_referral_episodes.id_child, dt_opd_coalesced) "Total_Referrals",
 	CASE WHEN dt_resolves <= CURRENT_TIMESTAMP THEN 1::smallint
 	ELSE 0::smallint END AS "FL_Visitation_Ended",
 	fl_emergent::smallint "FL_Referral_72_Hour",
