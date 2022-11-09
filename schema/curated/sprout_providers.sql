@@ -62,7 +62,8 @@ AS
         END AS fl_has_social_workers,
     o."createdAt" AS dt_create,
     o."updatedAt" AS dt_update,
-    o."deletedAt" AS dt_deleted
+    o."deletedAt" AS dt_deleted,
+    now() AS dt_view_refreshed
    FROM dcyf.organizations o
   ORDER BY o.id
 WITH NO DATA;
