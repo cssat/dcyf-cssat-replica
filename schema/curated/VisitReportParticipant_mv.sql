@@ -25,7 +25,8 @@ WITH referral_child AS (
 	AND "deletedAt" IS NULL
 ), referral_participants AS (
 	SELECT DISTINCT *,
-	person_id::bigint id_person 
+	person_id::bigint id_person,
+	last_name || ', ' || first_name participant_name
 	FROM (
 	SELECT * FROM referral_child
 	UNION 
@@ -52,6 +53,7 @@ WITH referral_child AS (
 	CASE WHEN va."cancellationType" = 'No-show' AND va."causedBy" = va.relationship THEN 1
 	ELSE 0 END AS "FL_No_Show",
 	rp.person_id "ID_Person",
+	rp.participant_name,
 	CASE WHEN fv."serviceType" = 'Sibling' AND va.relationship = 'Child' THEN 'Sibling'
 	ELSE va.relationship END AS "Role"
 	FROM visit_attendees va
@@ -96,7 +98,8 @@ END AS "ID_Visit_Report_Participant",
 "ID_Visitation_Referral_Participant"::varchar,
 "ID_Visitation_Referral",
 "FL_No_Show"::smallint,
-"ID_Person"::int, 
+"ID_Person"::int,
+participant_name "Participant_Name",
 "CD_Role",
 "Role"::varchar,
 now() "DT_View_Refreshed"

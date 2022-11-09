@@ -1,11 +1,14 @@
 DROP MATERIALIZED VIEW IF EXISTS dcyf.transport_detail CASCADE;
 CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.transport_detail AS
 
-SELECT vr.id "ID_Visit",
+SELECT
+vr.id::varchar || leg::varchar "ID_Visit_Transport",
+vr.id "ID_Visit",
 sr.id "ID_Visitation_Referral",
 "visitPlanId" "ID_Visit_Plan",
 "organizationId" "ID_Provider_Sprout",
 direction "Direction_Of_Transport",
+visit_date "DT_Visit",
 starttime "Start_Time",
 endtime "End_Time",
 (NULLIF(regexp_replace(distance, '[^0-9.]', '', 'g'), ''))::float "Transport_Distance",
@@ -15,7 +18,9 @@ child_name "Children_On_Transport",
 now() "DT_View_Refreshed"
 FROM (
 SELECT id,
+ROW_NUMBER() OVER(PARTITION BY id ORDER BY id) leg,
 "serviceReferralId",
+date visit_date,
 transport_details ->> 'directionOfTransport' direction,
 transport_details ->> 'transportStartTime' starttime,
 transport_details ->> 'transportEndTime' endtime,

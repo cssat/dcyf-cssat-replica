@@ -256,7 +256,8 @@ WHERE "isCurrentVersion"
 	"ID_Visitation_Referral",
 	"ID_Organization",
 	"CD_Event",
-	MAX("DT_Event") max_dt_event
+	MAX("DT_Event") max_dt_event,
+	MAX("TS_Event") max_ts_event
 	FROM dcyf.visitation_referral_action_log
 	WHERE "CD_Event" IN (13, 8, 10)
 	GROUP BY "ID_Visitation_Referral", "ID_Organization", "CD_Event"
@@ -264,7 +265,7 @@ WHERE "isCurrentVersion"
 SELECT visit_reports.id "ID_Visit",
  	visit_reports."serviceReferralId" "ID_Visitation_Referral",
 	visit_reports."caseNumber" "ID_Case",
-	org_version."organizationId" "ID_Organization",
+	org_version."organizationId" "ID_Provider_Sprout",
 	visitation_referral."CD_Region",
 	visitation_referral."Region",
 	visitation_referral."CD_Office",
@@ -273,19 +274,17 @@ SELECT visit_reports.id "ID_Visit",
 	visitation_referral."Worker_Name",
 	supervisors."ID_Visit_Supervisor",
 	supervisors."Visit_Supervisor_Name",
-	dpr.max_dt_event "DT_Provider_Received",
-	dpa.max_dt_event "DT_Provider_Accepted",
+	dpr.max_ts_event "DT_Provider_Received",
+	dpa.max_ts_event "DT_Provider_Accepted",
 	dps.max_dt_event "DT_First_Visit_Scheduled",
-	visit_reports.date "DT_Visit_Start",
-	visit_reports."time" "Time_Visit_Start",
-	visit_reports.date "DT_Visit_Stop",
-    visit_reports."endTime" "Time_Visit_Stop",
-	CASE WHEN visit_reports.virtual THEN 1
-	WHEN NOT visit_reports.virtual OR visit_reports.virtual IS NULL THEN 2
+	TO_TIMESTAMP(visit_reports.date::text || ' ' || visit_reports."time"::text, 'YYYY-MM-DD HH24:MI:SS') "DT_Visit_Start",
+	TO_TIMESTAMP(visit_reports.date::text || ' ' || visit_reports."endTime"::text, 'YYYY-MM-DD HH24:MI:SS') "DT_Visit_Stop",
+	CASE WHEN visit_reports.virtual AND visit_reports."reportType" != 'Missed-no-show' THEN 1
+	WHEN (NOT visit_reports.virtual OR visit_reports.virtual IS NULL) AND visit_reports."reportType" != 'Missed-no-show' THEN 2
 	WHEN visit_reports."reportType" = 'Missed-no-show' THEN 3
 	END AS "CD_Visit_Modality",
-	CASE WHEN visit_reports.virtual THEN 'Virtual'
-	WHEN NOT visit_reports.virtual OR visit_reports.virtual IS NULL THEN 'In-person'
+	CASE WHEN visit_reports.virtual AND visit_reports."reportType" != 'Missed-no-show' THEN 'Virtual'
+	WHEN (NOT visit_reports.virtual OR visit_reports.virtual IS NULL) AND visit_reports."reportType" != 'Missed-no-show' THEN 'In-person'
 	WHEN visit_reports."reportType" = 'Missed-no-show' THEN 'Missed-no-show'
 	END AS "Visit_Modality",
 	CASE WHEN visit_reports.virtual THEN 1 ELSE 0 END AS "FL_Virtual",
@@ -361,11 +360,11 @@ SELECT visit_reports.id "ID_Visit",
    LEFT OUTER JOIN (SELECT * FROM referral_actions WHERE "CD_Event" = 13) dpr
    ON visit_reports."serviceReferralId" = dpr."ID_Visitation_Referral"
    AND org_version."organizationId" = dpr."ID_Organization"
-   AND visit_reports.date >= dpr.max_dt_event
+   AND visit_reports.date >= dpr.max_ts_event
    LEFT OUTER JOIN (SELECT * FROM referral_actions WHERE "CD_Event" = 8) dpa
    ON visit_reports."serviceReferralId" = dpa."ID_Visitation_Referral"
    AND org_version."organizationId" = dpa."ID_Organization"
-   AND visit_reports.date >= dpa.max_dt_event
+   AND visit_reports.date >= dpa.max_ts_event
    LEFT OUTER JOIN (SELECT * FROM referral_actions WHERE "CD_Event" = 10) dps
    ON visit_reports."serviceReferralId" = dps."ID_Visitation_Referral"
    AND org_version."organizationId" = dps."ID_Organization"

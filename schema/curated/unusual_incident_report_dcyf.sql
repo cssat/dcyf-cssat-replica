@@ -1,3 +1,4 @@
+DROP MATERIALIZED VIEW IF EXISTS dcyf.unusual_incident_report_dcyf CASCADE;
 CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.unusual_incident_report_dcyf
 TABLESPACE pg_default
 AS
@@ -15,7 +16,7 @@ AS
     org.provider_name,
     org.provider_contact_name,
     org.provider_contact_phone,
-    org.famlink_provider_id,
+    org.famlink_provider_id id_famlink_provider,
     concat(sr."socialWorkerFirstName", ' ', sr."socialWorkerLastName") AS name_dcyf_worker,
     sr."caseNumber" AS id_case_famlink,
     concat(sr."caseDetailsFirstName", ' ', sr."caseDetailsLastName") AS case_name_famlink,
