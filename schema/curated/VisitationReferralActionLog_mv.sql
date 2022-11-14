@@ -1,4 +1,4 @@
-DROP MATERIALIZED VIEW IF EXISTS dcyf.visitation_referral_action_log;
+DROP MATERIALIZED VIEW IF EXISTS dcyf.visitation_referral_action_log CASCADE;
 CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.visitation_referral_action_log AS
 
 WITH timeline AS (
@@ -61,7 +61,7 @@ WITH timeline AS (
 	id_organization "ID_Organization",
 	dt_event "DT_Event",
 	CASE WHEN ts_event is NULL THEN "updatedAt"
-	ELSE ts_event END AS "TS_Event",
+	ELSE ts_event END AS "DT_Action",
 	CASE WHEN id_organization IN (SELECT destination_org_id FROM emergent_orgs) AND cd_event = 7 
 	THEN 13 ELSE cd_event END AS "CD_Event",
 	CASE WHEN cd_event = 13 OR (id_organization IN (SELECT destination_org_id FROM emergent_orgs) AND cd_event = 7) 

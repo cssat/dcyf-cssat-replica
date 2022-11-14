@@ -1,6 +1,6 @@
 -- View: dcyf.sprout_providers
 
--- DROP MATERIALIZED VIEW IF EXISTS dcyf.sprout_providers;
+DROP MATERIALIZED VIEW IF EXISTS dcyf.sprout_providers CASCADE;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.sprout_providers
 TABLESPACE pg_default
@@ -17,7 +17,7 @@ AS
         CASE
             WHEN regexp_replace(split_part(o."famlinkId"::text, '/'::text, 1), '\D'::text, ''::text, 'g'::text) ~ '^([0-9]+)'::text THEN regexp_replace(split_part(o."famlinkId"::text, '/'::text, 1), '\D'::text, ''::text, 'g'::text)::integer
             ELSE NULL::integer
-        END AS famlink_provider_id,
+        END AS id_famlink_provider,
         CASE
             WHEN o."visitationOnSaturday" = true THEN 1
             WHEN o."visitationOnSaturday" = false THEN 0
@@ -28,7 +28,7 @@ AS
             WHEN o."visitationOnSunday" = false THEN 0
             ELSE NULL::integer
         END AS fl_visitation_on_sunday,
-    o."bilingualSupportTypeId" AS bilingual_support_type_id,
+    o."bilingualSupportTypeId" AS cd_bilingual_support_type,
         CASE
             WHEN o."bilingualSupportTypeId" = 1 THEN 'No language support offered'::text
             WHEN o."bilingualSupportTypeId" = 2 THEN 'No, use interpreter'::text
@@ -36,7 +36,7 @@ AS
             ELSE NULL::text
         END AS bilingual_support_type,
     o."languagesSupported" AS languages_supported,
-    o."holidayAvailabilityTypeId" AS holiday_availibility_type_id,
+    o."holidayAvailabilityTypeId" AS cd_holiday_availibility_type,
         CASE
             WHEN o."holidayAvailabilityTypeId" = 1 THEN 'Open all holidays (normal hours)'::text
             WHEN o."holidayAvailabilityTypeId" = 2 THEN 'Open all holidays (modified hours)'::text

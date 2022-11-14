@@ -69,7 +69,7 @@ for(i in table_names) {
   
   write.csv(df, local_path)
   
-  ftp_path <- paste0("ftp://dcyf-uw-jooree.ahn:Highland!1Denny!2@sft.wa.gov/sprout/", i, ".csv")
+  ftp_path <- paste0("sftp://dcyf-uw-jooree.ahn:BitterMaple$22~@mft.wa.gov/sprout/", i, ".csv")
   
   ftpUpload(local_path,
             ftp_path, ftp.ssl = TRUE, ssl.verifypeer = FALSE, ssl.verifyhost = FALSE)
@@ -80,7 +80,7 @@ local_path <- paste0(date_path, "/transfer_summary", ".csv")
 
 write.csv(transfer_summary, local_path)
 
-ftp_path <- paste0("ftp://dcyf-uw-jooree.ahn:Highland!1Denny!2@sft.wa.gov/sprout/transfer_summary.csv")
+ftp_path <- paste0("sftp://dcyf-uw-jooree.ahn:BitterMaple$22~@mft.wa.gov/sprout/transfer_summary.csv")
 
 ftpUpload(local_path,
           ftp_path, ftp.ssl = TRUE, ssl.verifypeer = FALSE, ssl.verifyhost = FALSE)

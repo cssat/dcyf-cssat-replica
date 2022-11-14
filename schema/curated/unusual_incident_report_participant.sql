@@ -1,4 +1,4 @@
-DROP MATERIALIZED VIEW IF EXISTS dcyf.unusual_incident_report_participant;
+--DROP MATERIALIZED VIEW IF EXISTS dcyf.unusual_incident_report_participant;
 CREATE MATERIALIZED VIEW IF NOT EXISTS dcyf.unusual_incident_report_participant AS
 
 with kids as(
