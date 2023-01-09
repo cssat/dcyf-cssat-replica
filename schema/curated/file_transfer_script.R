@@ -84,7 +84,7 @@ local_path <- paste0(date_path, "/transfer_summary", ".csv")
 
 write.csv(transfer_summary, local_path)
 
-ftp_path <- paste0("sftp://", mft_credentials,"/sprout/transfer_summary.csv")
+ftp_path <- paste0("sftp://", mft_credentials,"@mft.wa.gov/sprout/transfer_summary.csv")
 
 ftpUpload(local_path,
           ftp_path, ftp.ssl = TRUE, ssl.verifypeer = FALSE, ssl.verifyhost = FALSE)
