@@ -7,32 +7,36 @@ library(RCurl)
 conn <- dbConnect(Postgres(),
                   dbname = Sys.getenv("DBNAME"),
                   host = Sys.getenv("HOST"),
-                  port = Sys.getenv("POSRT"),
+                  port = Sys.getenv("PORT"),
                   user = Sys.getenv("USER"),
                   password = Sys.getenv("PASSWORD"),
                   timezone = "America/Los_Angeles")
 
 
 # Tables
-table_names <- c(
-  "child_referral_episode",
-  "child_removal_episode",
-  "child_removal_supervision_level",
-  "sprout_provider_county_lookup",
-  "sprout_provider_office_lookup",
-  "sprout_provider_region_lookup",
-  "sprout_providers",
-  "unusual_incident_report_dcyf",
-  "visitation_referral",
-  "visitation_referral_participant",
-  "visitation_referral_provider",
-  "visit_report_dcyf",
-  "visit_report_participant",
-  "visitation_referral_action_log",
-  "unusual_incident_report_actions_dcyf",
-  "unusual_incident_report_participant",
-  "transport_detail"
-  )
+# table_names <- c(
+#   "child_referral_episode",
+#   "child_removal_episode",
+#   "child_removal_supervision_level",
+#   "sprout_provider_county_lookup",
+#   "sprout_provider_office_lookup",
+#   "sprout_provider_region_lookup",
+#   "sprout_providers",
+#   "unusual_incident_report_dcyf",
+#   "visitation_referral",
+#   "visitation_referral_participant",
+#   "visitation_referral_provider",
+#   "visit_report_dcyf",
+#   "visit_report_participant",
+#   "visitation_referral_action_log",
+#   "unusual_incident_report_actions_dcyf",
+#   "unusual_incident_report_participant",
+#   "transport_detail"
+#   )
+
+table_names <- c("visit_report_billing_data",
+                 "referral_intake_billing_data",
+                 "ui_report_billing_data")
 
 # Function to query db
 extract_df <- function(tbl_name) {
@@ -69,8 +73,8 @@ for(i in table_names) {
   
   write.csv(df, local_path)
   
-  ftp_path <- paste0("sftp://dcyf-uw-jooree.ahn:BitterMaple$22~@mft.wa.gov/sprout/", i, ".csv")
-  
+  ftp_path <- paste0("sftp://", mft_credentials, "@mft.wa.gov/sprout/", i, ".csv")
+
   ftpUpload(local_path,
             ftp_path, ftp.ssl = TRUE, ssl.verifypeer = FALSE, ssl.verifyhost = FALSE)
 }
@@ -80,7 +84,7 @@ local_path <- paste0(date_path, "/transfer_summary", ".csv")
 
 write.csv(transfer_summary, local_path)
 
-ftp_path <- paste0("sftp://dcyf-uw-jooree.ahn:BitterMaple$22~@mft.wa.gov/sprout/transfer_summary.csv")
+ftp_path <- paste0("sftp://", mft_credentials,"/sprout/transfer_summary.csv")
 
 ftpUpload(local_path,
           ftp_path, ftp.ssl = TRUE, ssl.verifypeer = FALSE, ssl.verifyhost = FALSE)
