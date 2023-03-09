@@ -9,6 +9,7 @@ AS
     uira."unusualIncidentReportId" AS id_unusual_incident_report,
     uira."actionTakenId" AS cd_action_taken,
     uiat.name AS action_taken,
+    uira."otherActionTaken" AS other_action_taken,
     now() as dt_view_refreshed
    FROM dcyf.unusual_incident_report_actions uira
    	 INNER JOIN dcyf.unusual_incident_report_dcyf uir

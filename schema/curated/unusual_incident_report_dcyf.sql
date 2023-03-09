@@ -9,6 +9,7 @@ AS
         )
  SELECT uir.id AS id_unusual_incident_report,
     uir."serviceReferralId" AS id_visitation_referral,
+    uir."incidentNarrative" AS incident_narrative,
     uir."createdAt" AS dt_reported,
     uir.date AS dt_incident,
     sr."dshsOffice" AS office,
