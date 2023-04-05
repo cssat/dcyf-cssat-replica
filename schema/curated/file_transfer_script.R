@@ -1,7 +1,11 @@
 # Packages
 library(RPostgres)
 library(tidyverse)
-library(RCurl)
+#library(RCurl)
+
+# Setting the path of your current open file
+setwd(getwd())
+
 
 # Connection
 conn <- dbConnect(Postgres(),
@@ -31,10 +35,7 @@ table_names <- c(
   "visitation_referral_action_log",
   "unusual_incident_report_actions_dcyf",
   "unusual_incident_report_participant",
-  "transport_detail",
-  "visit_report_billing_data",
-  "referral_intake_billing_data",
-  "ui_report_billing_data"
+  "transport_detail"
   )
 
 # Function to query db
@@ -49,11 +50,11 @@ extract_df <- function(tbl_name) {
 }
 
 # Set local directory
-date_path <- paste0("/Users/jooreea/OneDrive - UW/General/Data Team/Sprout DCYF OIAA Data/Transfer Files/", Sys.Date())
+copy_path <- paste0(getwd(), "/sprout-copies")
 
-if(dir.exists(date_path) == FALSE) {
+if(dir.exists(copy_path) == FALSE) {
   
-  dir.create(date_path)
+  dir.create(copy_path)
   
 }
 
@@ -68,28 +69,28 @@ for(i in table_names) {
   row_counts <- c(row_counts, nrow(df))
   timestamps <- c(timestamps, Sys.time())
   
-  local_path <- paste0(date_path, "/", i, ".csv")
+  local_path <- paste0(copy_path, "/", i, ".csv")
   
   write.csv(df, local_path)
   
-  ftp_path <- paste0("sftp://mft.wa.gov/Sprout/", i, ".csv")
-  
-  ftpUpload(what = local_path,
-            to = ftp_path,
-            userpwd = Sys.getenv("mft_credentials"), 
-            ftp.ssl = TRUE, ssl.verifypeer = FALSE, ssl.verifyhost = FALSE
-            )
+  # ftp_path <- paste0("sftp://mft.wa.gov/Sprout/", i, ".csv")
+  # 
+  # ftpUpload(what = local_path,
+  #           to = ftp_path,
+  #           userpwd = Sys.getenv("mft_credentials"),
+  #           ftp.ssl = TRUE, ssl.verifypeer = FALSE, ssl.verifyhost = FALSE
+  #           )
 }
 
 transfer_summary <- bind_cols(table = table_names, count = row_counts, timestamp = as.POSIXct(timestamps, origin = "1970-01-01"))
-local_path <- paste0(date_path, "/transfer_summary", ".csv")
+local_path <- paste0(copy_path, "/transfer_summary", ".csv")
 
 write.csv(transfer_summary, local_path)
 
-ftp_path <- "sftp://mft.wa.gov/Sprout/transfer_summary.csv"
-
-ftpUpload(what = local_path,
-          to = ftp_path,
-          userpwd = Sys.getenv("mft_credentials"),
-          ftp.ssl = TRUE, ssl.verifypeer = FALSE, ssl.verifyhost = FALSE
-          )
+# ftp_path <- "sftp://mft.wa.gov/Sprout/transfer_summary.csv"
+#
+# ftpUpload(what = local_path,
+#           to = ftp_path,
+#           userpwd = Sys.getenv("mft_credentials"),
+#           ftp.ssl = TRUE, ssl.verifypeer = FALSE, ssl.verifyhost = FALSE
+#           )

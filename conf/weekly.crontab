@@ -1,0 +1,1 @@
+0 5 * * 3 /app/bin/sprout-data-drop.sh
