@@ -1,8 +1,0 @@
-#!/usr/bin/expect -f
-
-set timeout -1
-set password "password"
-spawn sftp demo@test.rebex.net
-expect "*?assword*"
-send "$password\r"
-expect eof

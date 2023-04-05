@@ -3,9 +3,8 @@ library(RPostgres)
 library(tidyverse)
 #library(RCurl)
 
-# Setting the path of your current open file
+# Setting the path to current directory
 setwd(getwd())
-
 
 # Connection
 conn <- dbConnect(Postgres(),
@@ -15,7 +14,6 @@ conn <- dbConnect(Postgres(),
                   user = Sys.getenv("USER"),
                   password = Sys.getenv("PASSWORD"),
                   timezone = "America/Los_Angeles")
-
 
 # Tables
 table_names <- c(
