@@ -2,7 +2,7 @@
 ## Updating Joe's original code to fill in gaps
 
 ## Assumes you have an .Renviron file set up defining
-# CANS_F_URL
+# CANS_F_URL  <<-- Mostly this one!
 # CANS_F_DB
 # CANS_F_USER
 # CANS_F_PW
@@ -20,7 +20,7 @@ library(lubridate)
 
 ## command line connection works with (can use mongosh or mongo)
 ## mongo "mongodb://<user>:<password>@localhost.aptible.in:<port>/<db>?tls=true"
-## in MongoDB compass, in More Options, set SSL to first non-None option
+## in MongoDB compass, use mongodb://aptible:[PASSWORD]@localhost.aptible.in:[PORT]/db?directConnection=true&ssl=true
 
 ## Where should the output go?
 output_dir = "/Users/gregort/cans-output"
@@ -178,7 +178,8 @@ cans_common <- referrals %>%
   ) %>%
   filter(
     id_organization_sprout != 1
-  )
+  ) |>
+  mutate(across(where(is.character), str_squish))
 
 if(debug) {
   ## these are often the same. following Matt's advice we will
@@ -259,7 +260,7 @@ dt_extracted = now()
 output = lapply(output, cbind, dt_extracted)
 rowcounts = sapply(output, nrow)
 table_names = names(output)
-output[[sprintf("cans_rowcounts_%s.csv", today())]] = tibble(table = names(output), nrow = rowcounts)
+output[[sprintf("cans_rowcounts_%s", today())]] = tibble(table = names(output), nrow = rowcounts)
 
 for(i in seq_along(output)) {
   write_delim(
