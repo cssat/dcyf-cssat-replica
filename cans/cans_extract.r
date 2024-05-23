@@ -33,7 +33,6 @@ con = mongo(
   options = ssl_options(weak_cert_validation = T)
 )
 
-
 ## Testing
 # referrals = mongo(
 #   collection = "referrals",
@@ -98,7 +97,8 @@ cans_providers = select(providers,
 
 facesheets <- forms %>%
   .$FaceSheet %>%
-  as_tibble()
+  as_tibble() |>
+  mutate(across(starts_with("Date"), as.Date))
 
 eois <- bind_cols(
   caseId = forms$caseId,
@@ -174,7 +174,10 @@ cans_common <- referrals %>%
     tx_reason_for_eoi = ReasonForEOI,
     tx_reason_for_not_completed = NotCompleted, #Description if service not needed
     tx_natural_resources, # Resources
-    tx_additional_supports
+    tx_additional_supports,
+    dt_fpc_facesheet = DateFPC,
+    dt_trans_facesheet = DateTrans,
+    dt_end_facesheet = DateEnd
   ) %>%
   filter(
     id_organization_sprout != 1
